@@ -560,14 +560,14 @@ export default function Booking() {
     return () => clearInterval(interval);
   }, [adminHeldSlots, loadBookedSlots]);
 
-  // Release locks when user leaves the page
+  // Release locks when user leaves — but NOT for admin (admin holds must persist)
   useEffect(() => {
     return () => {
-      if (loggedIn) {
+      if (loggedIn && !isAdmin) {
         unlockSlots().catch(() => {});
       }
     };
-  }, [loggedIn]);
+  }, [loggedIn, isAdmin]);
   useEffect(() => {
     if (!showPayModal || !lockExpiry) return;
     const interval = setInterval(() => {
@@ -698,7 +698,26 @@ export default function Booking() {
           <div style={S.calendarWrap} className="booking-cal">
             {/* Month navigation */}
             <div style={S.calHeader}>
-              <button
+              {/* Release All Holds button — admin only */}
+          {isAdmin && Object.keys(adminHeldSlots).length > 0 && (
+            <button
+              style={{ width:"100%", padding:12, marginBottom:10, background:"#fffbeb", border:"1px solid #f59e0b", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#b45309", cursor:"pointer" }}
+              onClick={() => {
+                if (window.confirm("Release all held slots?")) {
+                  unlockSlots().then(() => {
+                    setAdminHeldSlots({});
+                    setHoldTimers({});
+                    loadBookedSlots();
+                    showToast("✅ All holds released!");
+                  }).catch(() => showToast("❌ Failed to release holds"));
+                }
+              }}
+            >
+              🔓 Release All Holds ({Object.keys(adminHeldSlots).length} slot{Object.keys(adminHeldSlots).length > 1 ? "s" : ""})
+            </button>
+          )}
+
+          <button
                 style={{ ...S.calNavBtn, opacity: isCurrentMonthAndYear ? 0.3 : 1, cursor: isCurrentMonthAndYear ? "not-allowed" : "pointer" }}
                 onClick={prevMonth}
               >
