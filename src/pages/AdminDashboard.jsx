@@ -264,7 +264,7 @@ export default function AdminDashboard() {
                   <div className="admin-table-wrap"><table style={S.table} className="admin-table">
                     <thead>
                       <tr>
-                        {["User","Facility","Date","Session","Slots","Total","Paid","Balance","Action"].map(h => (
+                        {["User","Facility","Date","Session","Slots","Booked For","Total","Paid","Balance","Action"].map(h => (
                           <th key={h} style={S.th}>{h}</th>
                         ))}
                       </tr>
@@ -305,6 +305,19 @@ export default function AdminDashboard() {
                             </td>
                             <td style={S.td}>
                               {(b.slots||[]).map(s => <span key={s} style={S.slotPill(isNight)}>{s}</span>)}
+                            </td>
+                            {/* ── Booked For (new) ── */}
+                            <td style={S.td}>
+                              {b.guest_name ? (
+                                <div>
+                                  <div style={{ fontWeight:600, fontSize:13, color:"#14532d" }}>{b.guest_name}</div>
+                                  <div style={{ fontSize:11, color:"#6b7280" }}>📞 {b.guest_phone}</div>
+                                </div>
+                              ) : b.is_hold ? (
+                                <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:20, background:"#fffbeb", border:"1px solid #f59e0b", color:"#b45309" }}>⏳ Hold</span>
+                              ) : (
+                                <span style={{ color:"#d1e7d1", fontSize:11 }}>—</span>
+                              )}
                             </td>
                             <td style={{ ...S.td, fontFamily:"'Bebas Neue',sans-serif", color:"#16a34a", fontSize:16 }}>
                               LKR {(b.total||0).toLocaleString()}
@@ -472,22 +485,22 @@ export default function AdminDashboard() {
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr auto", gap:12, alignItems:"end" }}>
                     <div>
                       <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Facility</div>
-                      <select style={{ ...S.input, width:"100%" }} value={blockForm.facility_id} onChange={e => setBlockForm(f => ({ ...f, facility_id: e.target.value }))}>
+                      <select style={{ ...S.filterInput, width:"100%" }} value={blockForm.facility_id} onChange={e => setBlockForm(f => ({ ...f, facility_id: e.target.value }))}>
                         <option value="">Select facility</option>
                         {facilities.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                       </select>
                     </div>
                     <div>
                       <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Start Date</div>
-                      <input type="date" style={{ ...S.input, width:"100%" }} value={blockForm.start_date} onChange={e => setBlockForm(f => ({ ...f, start_date: e.target.value }))} />
+                      <input type="date" style={{ ...S.filterInput, width:"100%" }} value={blockForm.start_date} onChange={e => setBlockForm(f => ({ ...f, start_date: e.target.value }))} />
                     </div>
                     <div>
                       <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>End Date</div>
-                      <input type="date" style={{ ...S.input, width:"100%" }} value={blockForm.end_date} onChange={e => setBlockForm(f => ({ ...f, end_date: e.target.value }))} />
+                      <input type="date" style={{ ...S.filterInput, width:"100%" }} value={blockForm.end_date} onChange={e => setBlockForm(f => ({ ...f, end_date: e.target.value }))} />
                     </div>
                     <div>
                       <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Reason</div>
-                      <select style={{ ...S.input, width:"100%" }} value={blockForm.reason} onChange={e => setBlockForm(f => ({ ...f, reason: e.target.value }))}>
+                      <select style={{ ...S.filterInput, width:"100%" }} value={blockForm.reason} onChange={e => setBlockForm(f => ({ ...f, reason: e.target.value }))}>
                         <option value="Tournament">Tournament</option>
                         <option value="Maintenance">Maintenance</option>
                         <option value="Private Event">Private Event</option>

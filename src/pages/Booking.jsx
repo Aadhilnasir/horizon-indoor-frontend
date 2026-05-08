@@ -224,6 +224,19 @@ const S = {
   modalVal: { fontSize:14, fontWeight:600, color:"#14532d" },
   modalVia: { fontSize:11, color:"#b45309", marginTop:8, padding:"6px 12px", background:"#fefce8", border:"1px solid #fde68a", borderRadius:6 },
   modalClose: { width:"100%", padding:"12px", marginTop:8, background:"#d1e7d1", border:"none", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#14532d", cursor:"pointer" },
+
+  // ── ADMIN ACTION MODAL (new) ──────────────────────────────────────────────
+  adminActionOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 },
+  adminActionBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"28px", minWidth:320, maxWidth:380, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.2)" },
+  adminActionTitle: { fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, color:"#14532d", marginBottom:4 },
+  adminActionSlot: { fontSize:12, color:"#6b7280", marginBottom:20 },
+  adminActionBtn: (color, bg) => ({ width:"100%", padding:"14px 18px", marginBottom:10, background:bg, border:`1px solid ${color}`, borderRadius:12, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", transition:"all .18s" }),
+  adminActionBtnIcon: { fontSize:22, flexShrink:0 },
+  adminActionBtnTitle: (color) => ({ fontSize:14, fontWeight:700, color, display:"block" }),
+  adminActionBtnSub: { fontSize:11, color:"#6b7280", display:"block", marginTop:2 },
+  adminInputLabel: { fontSize:11, fontWeight:600, letterSpacing:2, textTransform:"uppercase", color:"#4b7a4b", marginBottom:6, display:"block", marginTop:14 },
+  adminInput: { width:"100%", padding:"10px 14px", background:"#f0f7f0", border:"1px solid #d1e7d1", borderRadius:8, fontSize:14, color:"#14532d", outline:"none", boxSizing:"border-box", marginBottom:8 },
+  adminActionCancelBtn: { width:"100%", padding:"10px", background:"transparent", border:"1px solid #d1e7d1", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#6b7280", cursor:"pointer", marginTop:4 },
 };
 
 export default function Booking() {
@@ -259,6 +272,12 @@ export default function Booking() {
   const [timeLeft,         setTimeLeft]         = useState(600);
   const [lockError,        setLockError]        = useState("");
   const [slotModal,        setSlotModal]        = useState(null); // { slot, info }
+
+  // ── Admin action modal state (new) ────────────────────────────────────────
+  const [adminActionModal, setAdminActionModal] = useState(null); // { slotStr, slotIdx }
+  const [adminAction,      setAdminAction]      = useState("self"); // 'self' | 'guest' | 'hold'
+  const [guestName,        setGuestName]        = useState("");
+  const [guestPhone,       setGuestPhone]       = useState("");
 
   const isNight    = session === "night";
   const TIME_SLOTS = isNight ? NIGHT_SLOTS : DAY_SLOTS;
@@ -371,6 +390,43 @@ export default function Booking() {
     }
   };
 
+  // ── Admin action modal handlers (new) ────────────────────────────────────
+  const handleAdminActionSelect = async (action) => {
+    setAdminAction(action);
+    if (action === "self") {
+      // Select slot normally and close modal
+      setSelectedSlots(prev => { const next = new Set(prev); next.add(adminActionModal.slotIdx); return next; });
+      setAdminActionModal(null);
+    } else if (action === "hold") {
+      // Lock slot for 60 minutes
+      const f = facilities[selectedFacility];
+      try {
+        await lockSlots({
+          facility_id: f.id,
+          date:        dateISO,
+          session,
+          slots:       [adminActionModal.slotStr],
+          duration:    60,
+        });
+        showToast("⏳ Slot held for 1 hour!");
+        loadBookedSlots();
+      } catch (e) {
+        showToast("❌ " + e.message);
+      }
+      setAdminActionModal(null);
+    }
+    // For 'guest' — keep modal open to show form
+  };
+
+  const handleGuestBook = () => {
+    if (!guestName.trim() || !guestPhone.trim()) {
+      showToast("Please enter customer name and phone");
+      return;
+    }
+    setSelectedSlots(prev => { const next = new Set(prev); next.add(adminActionModal.slotIdx); return next; });
+    setAdminActionModal(null);
+  };
+
   const handleSlotToggle = async (slotStr) => {
     if (selectedFacility === null) { showToast("Please select a facility first"); return; }
     if (isSlotPast(slotStr, selectedDate)) return;
@@ -408,7 +464,16 @@ export default function Booking() {
       return;
     }
 
-    // If selecting — lock slot immediately
+    // Admin: show 3-option action popup instead of directly selecting
+    if (isAdmin) {
+      setAdminAction("self");
+      setGuestName("");
+      setGuestPhone("");
+      setAdminActionModal({ slotStr, slotIdx: i });
+      return;
+    }
+
+    // If selecting (regular user) — lock slot immediately
     if (loggedIn) {
       try {
         const allSlots = [...selectedSlots].map(idx => TIME_SLOTS[idx]);
@@ -467,15 +532,26 @@ export default function Booking() {
     const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
     setLockError("");
 
-    // Admin skips payment modal — books directly with full payment
+    // Admin skips payment modal — books directly
     if (isAdmin) {
       setConfirming(true);
       try {
-        await createBooking({ facility_id:f.id, date:dateISO, session, slots:newSlots, paid_amount:0 });
+        await createBooking({
+          facility_id: f.id,
+          date:        dateISO,
+          session,
+          slots:       newSlots,
+          paid_amount: 0,
+          guest_name:  adminAction === "guest" ? guestName : null,
+          guest_phone: adminAction === "guest" ? guestPhone : null,
+        });
         showToast("🎉 Booking Confirmed!");
         setSelectedFacility(null);
         setSelectedSlots(new Set());
         setBookedSlots([]);
+        setAdminAction("self");
+        setGuestName("");
+        setGuestPhone("");
       } catch (e) {
         showToast("❌ " + e.message);
       } finally {
@@ -754,6 +830,15 @@ export default function Booking() {
             }
           </div>
 
+          {/* Show guest info in summary if admin booked for customer */}
+          {isAdmin && adminAction === "guest" && guestName && (
+            <div style={S.sumRow}>
+              <div style={S.sumKey}>Booked For</div>
+              <div style={S.sumVal(false)}>{guestName}</div>
+              <div style={{ fontSize:12, color:"#6b7280", marginTop:4 }}>📞 {guestPhone}</div>
+            </div>
+          )}
+
           {canConfirm && (
             <div style={{ marginBottom:20 }}>
               <div style={S.durRow}>
@@ -789,6 +874,61 @@ export default function Booking() {
           <button style={S.btnClear} onClick={handleClear}>Clear Selection</button>
         </div>
       </div>
+
+      {/* ── ADMIN ACTION MODAL (new) ── */}
+      {adminActionModal && (
+        <div style={S.adminActionOverlay} onClick={() => setAdminActionModal(null)}>
+          <div style={S.adminActionBox} onClick={e => e.stopPropagation()}>
+            <div style={S.adminActionTitle}>Slot Action</div>
+            <div style={S.adminActionSlot}>🕐 {adminActionModal.slotStr} · {isNight ? "Night 🌙" : "Day ☀️"}</div>
+
+            {/* Option 1 — Book for Myself */}
+            <div style={S.adminActionBtn("#16a34a", adminAction==="self" ? "#f0fdf4" : "#ffffff")} onClick={() => handleAdminActionSelect("self")}>
+              <span style={S.adminActionBtnIcon}>👤</span>
+              <div>
+                <span style={S.adminActionBtnTitle("#14532d")}>Book for Myself</span>
+                <span style={S.adminActionBtnSub}>Select slot and confirm normally</span>
+              </div>
+            </div>
+
+            {/* Option 2 — Book for Customer */}
+            <div style={S.adminActionBtn("#3b82f6", adminAction==="guest" ? "#eff6ff" : "#ffffff")} onClick={() => setAdminAction("guest")}>
+              <span style={S.adminActionBtnIcon}>🧑‍💼</span>
+              <div>
+                <span style={S.adminActionBtnTitle("#1d4ed8")}>Book for Customer</span>
+                <span style={S.adminActionBtnSub}>Enter walk-in customer details</span>
+              </div>
+            </div>
+
+            {/* Guest form — shown when 'guest' selected */}
+            {adminAction === "guest" && (
+              <div style={{ padding:"12px 16px", background:"#eff6ff", borderRadius:10, border:"1px solid #bfdbfe", marginBottom:10 }}>
+                <label style={S.adminInputLabel}>Customer Name</label>
+                <input style={S.adminInput} placeholder="Enter customer name" value={guestName} onChange={e => setGuestName(e.target.value)} />
+                <label style={S.adminInputLabel}>Customer Phone</label>
+                <input style={S.adminInput} placeholder="0771234567" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} />
+                <button
+                  style={{ ...S.adminActionBtn("#3b82f6","#2563eb")[0], width:"100%", padding:"10px", background:"#2563eb", border:"none", borderRadius:8, color:"#ffffff", fontWeight:700, fontSize:13, cursor:"pointer", marginTop:4 }}
+                  onClick={handleGuestBook}
+                >
+                  Confirm Customer Booking
+                </button>
+              </div>
+            )}
+
+            {/* Option 3 — Hold */}
+            <div style={S.adminActionBtn("#f59e0b", adminAction==="hold" ? "#fffbeb" : "#ffffff")} onClick={() => handleAdminActionSelect("hold")}>
+              <span style={S.adminActionBtnIcon}>⏳</span>
+              <div>
+                <span style={S.adminActionBtnTitle("#b45309")}>Hold / Processing</span>
+                <span style={S.adminActionBtnSub}>Lock slot for 1 hour — others see Processing</span>
+              </div>
+            </div>
+
+            <button style={S.adminActionCancelBtn} onClick={() => setAdminActionModal(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
 
       {/* Admin slot info modal */}
       {slotModal && (
@@ -834,7 +974,6 @@ export default function Booking() {
           </div>
         </div>
       )}
-
 
       {/* ── PAYMENT MODAL ── */}
       {showPayModal && (
