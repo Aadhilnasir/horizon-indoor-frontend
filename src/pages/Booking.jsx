@@ -329,6 +329,21 @@ export default function Booking() {
       setBlockReason(d.block_reason || "");
       setDayType(d.day_type || "weekday");
       setActiveRate({ day: d.day_rate || 0, night: d.night_rate || 0 });
+
+      // Restore admin held slots from API on reload
+      if (getRole() === "admin" && d.admin_lock_info) {
+        const now = new Date();
+        const restoredHolds = {};
+        const restoredTimers = {};
+        Object.entries(d.admin_lock_info).forEach(([slot, expiry]) => {
+          if (new Date(expiry) > now) {
+            restoredHolds[slot] = expiry;
+            restoredTimers[slot] = Math.round((new Date(expiry) - now) / 1000);
+          }
+        });
+        setAdminHeldSlots(restoredHolds);
+        setHoldTimers(restoredTimers);
+      }
     } catch (_) {
       setBookedSlots([]);
       setLockedSlots([]);
@@ -379,6 +394,20 @@ export default function Booking() {
   // ── Slot handlers ─────────────────────────────────────────────────────────
   const handleSessionChange = s => { setSession(s); setSelectedSlots(new Set()); };
   const handleFacilitySelect = idx => { setSelectedFacility(idx); setSelectedSlots(new Set()); };
+
+  // Release admin hold on a specific slot
+  const handleReleaseHold = async (slotStr) => {
+    if (!window.confirm(`Release hold on ${slotStr}?`)) return;
+    try {
+      await unlockSlots();
+      setAdminHeldSlots({});
+      setHoldTimers({});
+      showToast("✅ Hold released!");
+      loadBookedSlots();
+    } catch (e) {
+      showToast("❌ " + e.message);
+    }
+  };
 
   // Admin clicks a booked slot — fetch who booked it
   const handleAdminSlotClick = async (slotStr) => {
@@ -809,11 +838,11 @@ export default function Booking() {
                     style={{
                       ...(adminHeld ? S.slotLocked : locked ? S.slotLocked : S.slot(selected, booked, past, isNight)),
                       ...(isAdmin && booked && !past ? { cursor:"pointer", borderColor: isNight ? "#3b82f6" : "#16a34a", opacity:0.75 } : {}),
-                      ...(adminHeld ? { background:"#fffbeb", borderColor:"#f59e0b", cursor:"not-allowed" } : {}),
+                      ...(adminHeld ? { background:"#fffbeb", borderColor:"#f59e0b", cursor:"pointer" } : {}),
                     }}
                     onClick={() => {
                       if (past) return;
-                      if (adminHeld) return;
+                      if (adminHeld) { handleReleaseHold(slotStr); return; }
                       if (locked) return;
                       if (booked) {
                         if (isAdmin) handleAdminSlotClick(slotStr);
