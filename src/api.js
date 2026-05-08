@@ -1,7 +1,7 @@
 // src/api.js
 // ── Central API service — all calls go through here ─────────────────────────
 
-const BASE = "http://127.0.0.1:8000/api";
+const BASE = "https://horizon-indoor-backend-production.up.railway.app/api";
 
 async function request(method, path, body = null) {
   const token = localStorage.getItem("token");
