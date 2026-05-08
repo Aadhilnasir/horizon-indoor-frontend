@@ -278,6 +278,8 @@ export default function Booking() {
   const [adminAction,      setAdminAction]      = useState("self"); // 'self' | 'guest' | 'hold'
   const [guestName,        setGuestName]        = useState("");
   const [guestPhone,       setGuestPhone]       = useState("");
+  const [adminHeldSlots,   setAdminHeldSlots]   = useState({}); // {slotStr: expiryISO}
+  const [holdTimers,       setHoldTimers]       = useState({}); // {slotStr: secondsLeft}
 
   const isNight    = session === "night";
   const TIME_SLOTS = isNight ? NIGHT_SLOTS : DAY_SLOTS;
@@ -401,13 +403,16 @@ export default function Booking() {
       // Lock slot for 60 minutes
       const f = facilities[selectedFacility];
       try {
-        await lockSlots({
+        const res = await lockSlots({
           facility_id: f.id,
           date:        dateISO,
           session,
           slots:       [adminActionModal.slotStr],
           duration:    60,
         });
+        // Track hold locally so admin sees countdown on their own held slot
+        setAdminHeldSlots(prev => ({ ...prev, [adminActionModal.slotStr]: res.expires_at }));
+        setHoldTimers(prev => ({ ...prev, [adminActionModal.slotStr]: 3600 }));
         showToast("⏳ Slot held for 1 hour!");
         loadBookedSlots();
       } catch (e) {
@@ -500,6 +505,31 @@ export default function Booking() {
       setSelectedSlots(prev => { const next = new Set(prev); next.add(i); return next; });
     }
   };
+
+  // ── Admin hold countdown timer ────────────────────────────────────────────
+  useEffect(() => {
+    if (Object.keys(adminHeldSlots).length === 0) return;
+    const interval = setInterval(() => {
+      const now = new Date();
+      const updated = {};
+      const expired = [];
+      Object.entries(adminHeldSlots).forEach(([slot, expiry]) => {
+        const left = Math.max(0, Math.round((new Date(expiry) - now) / 1000));
+        updated[slot] = left;
+        if (left === 0) expired.push(slot);
+      });
+      setHoldTimers(updated);
+      if (expired.length > 0) {
+        setAdminHeldSlots(prev => {
+          const next = { ...prev };
+          expired.forEach(s => delete next[s]);
+          return next;
+        });
+        loadBookedSlots();
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [adminHeldSlots, loadBookedSlots]);
 
   // Release locks when user leaves the page
   useEffect(() => {
@@ -767,19 +797,23 @@ export default function Booking() {
           ) : (
             <div style={S.slotGrid} className="booking-slot-grid">
               {TIME_SLOTS.map((slotStr, i) => {
-                const past     = isSlotPast(slotStr, selectedDate);
-                const booked   = bookedSlots.includes(slotStr);
-                const selected = selectedSlots.has(i) && !past;
-                const locked   = !selected && lockedSlots.includes(slotStr);
+                const past      = isSlotPast(slotStr, selectedDate);
+                const booked    = bookedSlots.includes(slotStr);
+                const selected  = selectedSlots.has(i) && !past;
+                const locked    = !selected && lockedSlots.includes(slotStr);
+                const adminHeld = isAdmin && !!adminHeldSlots[slotStr] && new Date() < new Date(adminHeldSlots[slotStr]);
+                const holdLeft  = adminHeld ? (holdTimers[slotStr] ?? 3600) : 0;
                 return (
                   <div
                     key={i}
                     style={{
-                      ...(locked ? S.slotLocked : S.slot(selected, booked, past, isNight)),
+                      ...(adminHeld ? S.slotLocked : locked ? S.slotLocked : S.slot(selected, booked, past, isNight)),
                       ...(isAdmin && booked && !past ? { cursor:"pointer", borderColor: isNight ? "#3b82f6" : "#16a34a", opacity:0.75 } : {}),
+                      ...(adminHeld ? { background:"#fffbeb", borderColor:"#f59e0b", cursor:"not-allowed" } : {}),
                     }}
                     onClick={() => {
                       if (past) return;
+                      if (adminHeld) return;
                       if (locked) return;
                       if (booked) {
                         if (isAdmin) handleAdminSlotClick(slotStr);
@@ -790,7 +824,14 @@ export default function Booking() {
                   >
                     <span style={S.slotTime}>{slotStr}</span>
                     <span style={S.slotBadge}>
-                      {locked ? "⏳ Processing" : past ? "Past" : booked ? (isAdmin ? "Booked 👁" : "Booked") : selected ? "Selected ✓" : "Available"}
+                      {adminHeld
+                        ? `⏳ ${Math.floor(holdLeft/60)}:${String(holdLeft%60).padStart(2,"0")}`
+                        : locked ? "⏳ Processing"
+                        : past ? "Past"
+                        : booked ? (isAdmin ? "Booked 👁" : "Booked")
+                        : selected ? "Selected ✓"
+                        : "Available"
+                      }
                     </span>
                   </div>
                 );
