@@ -62,11 +62,8 @@ function isSlotPast(slotStr, selectedDate) {
   const today = new Date();
   if (!isSameDay(selectedDate, today)) return false;
   const endTime = slotStr.split(" – ")[1];
-  const [endHour, endMin] = endTime.replace(":00","").split(":").map(Number);
-  const endDate = new Date();
-  endDate.setHours(isNaN(endMin) ? endHour : endHour, isNaN(endMin) ? 0 : endMin, 0, 0);
-  // parse properly
   const parts = endTime.split(":");
+  const endDate = new Date();
   endDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
   return today >= endDate;
 }
@@ -191,7 +188,7 @@ const S = {
   totalPrice: n => ({ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color: n?"#3b82f6":"#16a34a", letterSpacing:1 }),
   spacer: { flex:1 },
   loginBanner: { background:"#dcfce7", border:"1px solid #16a34a", borderRadius:12, padding:"14px 18px", fontSize:13, color:"#16a34a", marginBottom:16, textAlign:"center", lineHeight:1.6 },
-  btnConfirm: (d,n) => ({ width:"100%", padding:18, background: d?"#f0f7f0":(n?"linear-gradient(135deg,#2563eb,#3b82f6)":"#16a34a"), border:`1px solid ${d?"#d1e7d1":"transparent"}`, borderRadius:14, fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3, color: d?"#9ca3af":(n?"#ffffff":"#ffffff"), cursor: d?"not-allowed":"pointer", marginBottom:12, transition:"all .25s" }),
+  btnConfirm: (d,n) => ({ width:"100%", padding:18, background: d?"#f0f7f0":(n?"linear-gradient(135deg,#2563eb,#3b82f6)":"#16a34a"), border:`1px solid ${d?"#d1e7d1":"transparent"}`, borderRadius:14, fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3, color: d?"#9ca3af":"#ffffff", cursor: d?"not-allowed":"pointer", marginBottom:12, transition:"all .25s" }),
   btnClear: { width:"100%", padding:12, background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:500, color:"#6b7280", cursor:"pointer" },
   toast: v => ({ position:"fixed", bottom:32, left:"50%", transform: v?"translateX(-50%) translateY(0)":"translateX(-50%) translateY(20px)", background:"#16a34a", color:"#f0f7f0", fontWeight:700, fontSize:14, padding:"14px 28px", borderRadius:20, opacity: v?1:0, transition:"all .4s cubic-bezier(0.34,1.56,0.64,1)", zIndex:999, whiteSpace:"normal", maxWidth:"90vw", textAlign:"center", pointerEvents:"none" }),
 
@@ -225,7 +222,7 @@ const S = {
   modalVia: { fontSize:11, color:"#b45309", marginTop:8, padding:"6px 12px", background:"#fefce8", border:"1px solid #fde68a", borderRadius:6 },
   modalClose: { width:"100%", padding:"12px", marginTop:8, background:"#d1e7d1", border:"none", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#14532d", cursor:"pointer" },
 
-  // ── ADMIN ACTION MODAL (new) ──────────────────────────────────────────────
+  // ── ADMIN ACTION MODAL ────────────────────────────────────────────────────
   adminActionOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 },
   adminActionBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"28px", minWidth:320, maxWidth:380, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.2)" },
   adminActionTitle: { fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, color:"#14532d", marginBottom:4 },
@@ -271,15 +268,15 @@ export default function Booking() {
   const [lockExpiry,       setLockExpiry]       = useState(null);
   const [timeLeft,         setTimeLeft]         = useState(600);
   const [lockError,        setLockError]        = useState("");
-  const [slotModal,        setSlotModal]        = useState(null); // { slot, info }
+  const [slotModal,        setSlotModal]        = useState(null);
 
-  // ── Admin action modal state (new) ────────────────────────────────────────
+  // ── Admin action modal state ──────────────────────────────────────────────
   const [adminActionModal, setAdminActionModal] = useState(null); // { slotStr, slotIdx }
-  const [adminAction,      setAdminAction]      = useState("self"); // 'self' | 'guest' | 'hold'
+  const [adminAction,      setAdminAction]      = useState("self");
   const [guestName,        setGuestName]        = useState("");
   const [guestPhone,       setGuestPhone]       = useState("");
-  const [adminHeldSlots,   setAdminHeldSlots]   = useState({}); // {slotStr: expiryISO}
-  const [holdTimers,       setHoldTimers]       = useState({}); // {slotStr: secondsLeft}
+  const [adminHeldSlots,   setAdminHeldSlots]   = useState({});
+  const [holdTimers,       setHoldTimers]       = useState({});
 
   const isNight    = session === "night";
   const TIME_SLOTS = isNight ? NIGHT_SLOTS : DAY_SLOTS;
@@ -298,20 +295,17 @@ export default function Booking() {
     setLoggedIn(isLoggedIn());
     setIsAdmin(getRole() === "admin");
 
-    // Load facilities
     getFacilities()
       .then(d => setFacilities(d.facilities))
       .catch(() => showToast("Failed to load facilities"))
       .finally(() => setLoadingFacility(false));
 
-    // Load holidays for current year and next year from DB
     const currentYear = new Date().getFullYear();
     Promise.all([
       getHolidays(currentYear),
       getHolidays(currentYear + 1),
     ]).then(([r1, r2]) => {
       const all = [...(r1.holidays || []), ...(r2.holidays || [])];
-      // Build lookup object { "2026-04-14": "Sinhala & Tamil New Year" }
       const lookup = {};
       all.forEach(h => { lookup[h.date] = h.name; });
       SL_HOLIDAYS = lookup;
@@ -368,13 +362,12 @@ export default function Booking() {
 
   // ── Calendar navigation ───────────────────────────────────────────────────
   const prevMonth = () => {
-    if (calYear === today.getFullYear() && calMonth === today.getMonth()) return; // can't go before current month
+    if (calYear === today.getFullYear() && calMonth === today.getMonth()) return;
     if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); }
     else setCalMonth(m => m-1);
   };
 
   const nextMonth = () => {
-    // Allow up to 1 year ahead
     const maxDate = new Date(today.getFullYear(), today.getMonth() + 12, 1);
     const nextM   = calMonth === 11 ? 0 : calMonth + 1;
     const nextY   = calMonth === 11 ? calYear + 1 : calYear;
@@ -395,7 +388,6 @@ export default function Booking() {
   const handleSessionChange = s => { setSession(s); setSelectedSlots(new Set()); };
   const handleFacilitySelect = idx => { setSelectedFacility(idx); setSelectedSlots(new Set()); };
 
-  // Release admin hold on a specific slot
   const handleReleaseHold = async (slotStr) => {
     if (!window.confirm(`Release hold on ${slotStr}?`)) return;
     try {
@@ -409,7 +401,6 @@ export default function Booking() {
     }
   };
 
-  // Admin clicks a booked slot — fetch who booked it
   const handleAdminSlotClick = async (slotStr) => {
     if (selectedFacility === null) return;
     const f = facilities[selectedFacility];
@@ -421,15 +412,13 @@ export default function Booking() {
     }
   };
 
-  // ── Admin action modal handlers (new) ────────────────────────────────────
+  // ── Admin action modal handlers ───────────────────────────────────────────
   const handleAdminActionSelect = async (action) => {
     setAdminAction(action);
     if (action === "self") {
-      // Select slot normally and close modal
       setSelectedSlots(prev => { const next = new Set(prev); next.add(adminActionModal.slotIdx); return next; });
       setAdminActionModal(null);
     } else if (action === "hold") {
-      // Lock slot for 60 minutes
       const f = facilities[selectedFacility];
       try {
         const res = await lockSlots({
@@ -439,7 +428,6 @@ export default function Booking() {
           slots:       [adminActionModal.slotStr],
           duration:    60,
         });
-        // Track hold locally so admin sees countdown on their own held slot
         setAdminHeldSlots(prev => ({ ...prev, [adminActionModal.slotStr]: res.expires_at }));
         setHoldTimers(prev => ({ ...prev, [adminActionModal.slotStr]: 3600 }));
         showToast("⏳ Slot held for 1 hour!");
@@ -470,19 +458,16 @@ export default function Booking() {
     const i = TIME_SLOTS.indexOf(slotStr);
     const f = facilities[selectedFacility];
 
-    // If deselecting — remove from selection and update locks
+    // If deselecting
     if (selectedSlots.has(i)) {
       const newSelected = new Set(selectedSlots);
       newSelected.delete(i);
       setSelectedSlots(newSelected);
 
-      // Update DB locks — re-lock remaining slots or unlock all if none left
       if (loggedIn) {
         if (newSelected.size === 0) {
-          // No slots selected — release all locks
           unlockSlots().catch(() => {});
         } else {
-          // Re-lock remaining slots only
           const remainingSlots = [...newSelected].map(idx => TIME_SLOTS[idx]);
           lockSlots({
             facility_id: f.id,
@@ -492,13 +477,12 @@ export default function Booking() {
             duration:    2,
           }).catch(() => {});
         }
-        // Refresh so other users see the change
         setTimeout(() => loadBookedSlots(), 500);
       }
       return;
     }
 
-    // Admin: show 3-option action popup instead of directly selecting
+    // Admin: show 3-option action popup
     if (isAdmin) {
       setAdminAction("self");
       setGuestName("");
@@ -507,7 +491,7 @@ export default function Booking() {
       return;
     }
 
-    // If selecting (regular user) — lock slot immediately
+    // Regular user — lock slot immediately
     if (loggedIn) {
       try {
         const allSlots = [...selectedSlots].map(idx => TIME_SLOTS[idx]);
@@ -517,10 +501,9 @@ export default function Booking() {
           date:        dateISO,
           session,
           slots:       allSlots,
-          duration:    2, // 2 mins when slot clicked
+          duration:    2,
         });
         setSelectedSlots(prev => { const next = new Set(prev); next.add(i); return next; });
-        // Refresh to show locked status to other users
         loadBookedSlots();
       } catch (e) {
         if (e.message.includes("being processed")) {
@@ -560,7 +543,7 @@ export default function Booking() {
     return () => clearInterval(interval);
   }, [adminHeldSlots, loadBookedSlots]);
 
-  // Release locks when user leaves — but NOT for admin (admin holds must persist)
+  // Release locks on unmount — but NOT for admin holds
   useEffect(() => {
     return () => {
       if (loggedIn && !isAdmin) {
@@ -568,6 +551,7 @@ export default function Booking() {
       }
     };
   }, [loggedIn, isAdmin]);
+
   useEffect(() => {
     if (!showPayModal || !lockExpiry) return;
     const interval = setInterval(() => {
@@ -591,7 +575,7 @@ export default function Booking() {
     const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
     setLockError("");
 
-    // Admin skips payment modal — books directly
+    // Admin skips payment modal
     if (isAdmin) {
       setConfirming(true);
       try {
@@ -667,18 +651,16 @@ export default function Booking() {
   const handleClear = () => { setSelectedFacility(null); setSelectedSlots(new Set()); };
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const calDays     = buildCalendarDays(calYear, calMonth);
+  const calDays         = buildCalendarDays(calYear, calMonth);
   const sortedSlots     = [...selectedSlots].sort((a,b)=>a-b);
   const selectedDayType = getDayType(selectedDate);
-  // Use rate from API (already correct for weekday/weekend/holiday)
-  // Fall back to base facility rate if API rate not loaded yet
   const rate = selectedFacility !== null
     ? (activeRate.day > 0
         ? (isNight ? activeRate.night : activeRate.day)
         : (isNight ? facilities[selectedFacility]?.night_rate : facilities[selectedFacility]?.day_rate) || 0)
     : 0;
-  const total = rate * selectedSlots.size;
-  const canConfirm  = selectedFacility !== null && selectedSlots.size > 0;
+  const total      = rate * selectedSlots.size;
+  const canConfirm = selectedFacility !== null && selectedSlots.size > 0;
   const accentColor = isNight ? "#3b82f6" : "#16a34a";
   const isCurrentMonthAndYear = calYear === today.getFullYear() && calMonth === today.getMonth();
 
@@ -693,47 +675,40 @@ export default function Booking() {
           <div style={S.pageLabel}>Horizon Indoor Complex</div>
           <div style={S.pageTitle} className="booking-page-title">Book a <span style={{ color:accentColor }}>Facility</span></div>
 
-          {/* ── CALENDAR DATE PICKER ── */}
+          {/* ── CALENDAR ── */}
           <div style={S.sLabel}>Select Date</div>
           <div style={S.calendarWrap} className="booking-cal">
-            {/* Month navigation */}
             <div style={S.calHeader}>
-              {/* Release All Holds button — admin only */}
-          {isAdmin && Object.keys(adminHeldSlots).length > 0 && (
-            <button
-              style={{ width:"100%", padding:12, marginBottom:10, background:"#fffbeb", border:"1px solid #f59e0b", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#b45309", cursor:"pointer" }}
-              onClick={() => {
-                if (window.confirm("Release all held slots?")) {
-                  unlockSlots().then(() => {
-                    setAdminHeldSlots({});
-                    setHoldTimers({});
-                    loadBookedSlots();
-                    showToast("✅ All holds released!");
-                  }).catch(() => showToast("❌ Failed to release holds"));
-                }
-              }}
-            >
-              🔓 Release All Holds ({Object.keys(adminHeldSlots).length} slot{Object.keys(adminHeldSlots).length > 1 ? "s" : ""})
-            </button>
-          )}
-
-          <button
+              {/* Release All Holds — admin only */}
+              {isAdmin && Object.keys(adminHeldSlots).length > 0 && (
+                <button
+                  style={{ width:"100%", padding:12, marginBottom:10, background:"#fffbeb", border:"1px solid #f59e0b", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#b45309", cursor:"pointer" }}
+                  onClick={() => {
+                    if (window.confirm("Release all held slots?")) {
+                      unlockSlots().then(() => {
+                        setAdminHeldSlots({});
+                        setHoldTimers({});
+                        loadBookedSlots();
+                        showToast("✅ All holds released!");
+                      }).catch(() => showToast("❌ Failed to release holds"));
+                    }
+                  }}
+                >
+                  🔓 Release All Holds ({Object.keys(adminHeldSlots).length} slot{Object.keys(adminHeldSlots).length > 1 ? "s" : ""})
+                </button>
+              )}
+              <button
                 style={{ ...S.calNavBtn, opacity: isCurrentMonthAndYear ? 0.3 : 1, cursor: isCurrentMonthAndYear ? "not-allowed" : "pointer" }}
                 onClick={prevMonth}
-              >
-                ‹
-              </button>
+              >‹</button>
               <div style={S.calMonthYear}>{MONTHS_FULL[calMonth]} {calYear}</div>
               <button style={S.calNavBtn} onClick={nextMonth}>›</button>
             </div>
 
-            {/* Day labels */}
             <div style={S.calGrid} className="booking-cal-grid">
               {DAYS_SHORT.map(d => (
                 <div key={d} style={S.calDayLabel}>{d.slice(0,2)}</div>
               ))}
-
-              {/* Calendar days */}
               {calDays.map((day, i) => {
                 if (!day) return <div key={`empty-${i}`} />;
                 const isPast     = day < today;
@@ -741,7 +716,6 @@ export default function Booking() {
                 const isSelected = isSameDay(day, selectedDate);
                 const isDisabled = isPast;
                 const dayType    = getDayType(day);
-
                 return (
                   <div
                     key={i}
@@ -755,14 +729,12 @@ export default function Booking() {
               })}
             </div>
 
-            {/* Calendar legend */}
             <div style={S.calLegend}>
               <div style={S.calLegendItem}><div style={S.calLegendDot("#16a34a")} /> Weekday</div>
               <div style={S.calLegendItem}><div style={S.calLegendDot("#3b82f6")} /> Weekend</div>
               <div style={S.calLegendItem}><div style={S.calLegendDot("#ff8080")} /> Holiday</div>
             </div>
 
-            {/* Selected date label */}
             <div style={S.calSelectedLabel}>
               <span style={S.calSelIcon}>📅</span>
               <span style={S.calSelText}>
@@ -834,7 +806,7 @@ export default function Booking() {
           {loadingSlots ? (
             <div style={S.loadingBox}>Checking availability...</div>
           ) : isBlocked ? (
-            <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:12, padding:"32px 24px", textAlign:"center", gridColumn:"1/-1" }}>
+            <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:12, padding:"32px 24px", textAlign:"center" }}>
               <div style={{ fontSize:32, marginBottom:12 }}>🚫</div>
               <div style={{ fontSize:16, fontWeight:700, color:"#dc2626", marginBottom:8 }}>Facility Unavailable</div>
               <div style={{ fontSize:14, color:"#6b7280" }}>This facility is not available on the selected date.</div>
@@ -919,7 +891,7 @@ export default function Booking() {
             }
           </div>
 
-          {/* Show guest info in summary if admin booked for customer */}
+          {/* Guest info in summary */}
           {isAdmin && adminAction === "guest" && guestName && (
             <div style={S.sumRow}>
               <div style={S.sumKey}>Booked For</div>
@@ -936,9 +908,7 @@ export default function Booking() {
               </div>
               <div style={S.durRow}>
                 <span style={S.durLabel}>Rate ({isNight?"Night 🌙":"Day ☀️"})</span>
-                <span style={S.durVal}>
-                  LKR {(rate||0).toLocaleString()} / hr
-                </span>
+                <span style={S.durVal}>LKR {(rate||0).toLocaleString()} / hr</span>
               </div>
               <div style={S.totalRow}>
                 <span style={S.totalLabel}>Total</span>
@@ -964,7 +934,7 @@ export default function Booking() {
         </div>
       </div>
 
-      {/* ── ADMIN ACTION MODAL (new) ── */}
+      {/* ── ADMIN ACTION MODAL ── */}
       {adminActionModal && (
         <div style={S.adminActionOverlay} onClick={() => setAdminActionModal(null)}>
           <div style={S.adminActionBox} onClick={e => e.stopPropagation()}>
@@ -989,7 +959,7 @@ export default function Booking() {
               </div>
             </div>
 
-            {/* Guest form — shown when 'guest' selected */}
+            {/* Guest form */}
             {adminAction === "guest" && (
               <div style={{ padding:"12px 16px", background:"#eff6ff", borderRadius:10, border:"1px solid #bfdbfe", marginBottom:10 }}>
                 <label style={S.adminInputLabel}>Customer Name</label>
@@ -997,7 +967,7 @@ export default function Booking() {
                 <label style={S.adminInputLabel}>Customer Phone</label>
                 <input style={S.adminInput} placeholder="0771234567" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} />
                 <button
-                  style={{ ...S.adminActionBtn("#3b82f6","#2563eb")[0], width:"100%", padding:"10px", background:"#2563eb", border:"none", borderRadius:8, color:"#ffffff", fontWeight:700, fontSize:13, cursor:"pointer", marginTop:4 }}
+                  style={{ width:"100%", padding:"10px", background:"#2563eb", border:"none", borderRadius:8, color:"#ffffff", fontWeight:700, fontSize:13, cursor:"pointer", marginTop:4 }}
                   onClick={handleGuestBook}
                 >
                   Confirm Customer Booking
@@ -1050,9 +1020,7 @@ export default function Booking() {
                   </div>
                 </div>
                 {slotModal.info.is_shadow && (
-                  <div style={S.modalVia}>
-                    ⚠️ Auto-blocked via: {slotModal.info.booked_via}
-                  </div>
+                  <div style={S.modalVia}>⚠️ Auto-blocked via: {slotModal.info.booked_via}</div>
                 )}
               </>
             ) : (
@@ -1076,7 +1044,6 @@ export default function Booking() {
             </div>
             <div style={S.paySub}>Pay a minimum deposit of LKR 500 now. Remaining balance to be paid at the venue.</div>
 
-            {/* Booking summary */}
             <div style={S.payRow}>
               <span style={S.payLabel}>Facility</span>
               <span style={S.payVal}>{facilities[selectedFacility]?.name}</span>
@@ -1094,7 +1061,6 @@ export default function Booking() {
               <span style={S.payTotal}>LKR {total.toLocaleString()}</span>
             </div>
 
-            {/* Amount input */}
             <div style={S.payInputWrap}>
               <label style={S.payInputLabel}>Pay Now (LKR)</label>
               <input
@@ -1109,7 +1075,6 @@ export default function Booking() {
               {paidAmount > total && <div style={S.payError}>⚠️ Cannot exceed total amount</div>}
             </div>
 
-            {/* Balance info */}
             <div style={S.payMsg}>
               💰 Paying now: <strong>LKR {paidAmount.toLocaleString()}</strong>
               {paidAmount < total && (
