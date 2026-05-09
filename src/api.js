@@ -48,6 +48,17 @@ export async function apiForgotPassword(email) {
 export async function apiResetPassword(email, token, password, password_confirmation) {
   return request("POST", "/reset-password", { email, token, password, password_confirmation });
 }
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+export function getMe() {
+  return request("GET", "/me");
+}
+
+export function updateMe(payload) {
+  return request("PUT", "/me", payload);
+}
+
+// ── Facilities ────────────────────────────────────────────────────────────────
 export function getFacilities() {
   return request("GET", "/facilities");
 }
@@ -116,6 +127,8 @@ export function adminAddHoliday(date, name) {
 export function adminDeleteHoliday(id) {
   return request("DELETE", `/admin/holidays/${id}`);
 }
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
 export function adminStats(period = 'all') {
   return request("GET", `/admin/stats?period=${period}`);
 }
@@ -171,6 +184,6 @@ function _clearSession() {
   );
 }
 
-export const isLoggedIn = () => localStorage.getItem("isLoggedIn") === "true";
-export const getRole    = () => localStorage.getItem("role") || "user";
+export const isLoggedIn  = () => localStorage.getItem("isLoggedIn") === "true";
+export const getRole     = () => localStorage.getItem("role") || "user";
 export const getUsername = () => localStorage.getItem("username") || "";

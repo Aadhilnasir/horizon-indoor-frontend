@@ -3,19 +3,19 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { isLoggedIn, getRole, getUsername, apiLogout } from "../api";
 
 const LINKS = [
-  { to: "/",         label: "Home" },
-  { to: "/booking",  label: "Book Now" },
-  { to: "/dashboard",label: "My Bookings", authOnly: true,  adminHide: true },
-  { to: "/admin",    label: "Admin Panel", adminOnly: true },
+  { to: "/",          label: "Home" },
+  { to: "/booking",   label: "Book Now" },
+  { to: "/dashboard", label: "My Bookings", authOnly: true, adminHide: true },
+  { to: "/admin",     label: "Admin Panel", adminOnly: true },
 ];
 
 export default function Navbar() {
-  const location  = useLocation();
-  const navigate  = useNavigate();
-  const [menuOpen,   setMenuOpen]   = useState(false);
-  const [loggedIn,   setLoggedIn]   = useState(false);
-  const [role,       setRole]       = useState("user");
-  const [username,   setUsername]   = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [role,     setRole]     = useState("user");
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
@@ -34,9 +34,9 @@ export default function Navbar() {
   };
 
   const visibleLinks = LINKS.filter(({ authOnly, adminOnly, adminHide }) => {
-    if (adminOnly  && role !== "admin") return false;
-    if (adminHide  && role === "admin") return false;
-    if (authOnly   && !loggedIn)        return false;
+    if (adminOnly && role !== "admin") return false;
+    if (adminHide && role === "admin") return false;
+    if (authOnly  && !loggedIn)        return false;
     return true;
   });
 
@@ -57,7 +57,9 @@ export default function Navbar() {
         .nb-link.active::after { content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:18px;height:2px;background:#16a34a;border-radius:2px; }
         .nb-auth { display:flex;align-items:center;gap:8px; }
         .nb-user { display:flex;align-items:center;gap:8px; }
-        .nb-avatar { width:32px;height:32px;background:#bbf7d0;border:1px solid #16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#16a34a; }
+        /* Avatar is now a clickable link */
+        .nb-avatar { width:32px;height:32px;background:#bbf7d0;border:1px solid #16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#16a34a;text-decoration:none;cursor:pointer;transition:all .18s; }
+        .nb-avatar:hover { background:#16a34a;color:#ffffff;transform:scale(1.08); }
         .nb-uname { font-size:13px;font-weight:500;color:#1a2e1a; }
         .nb-admin-badge { font-size:10px;font-weight:600;background:#fefce8;border:1px solid #b45309;color:#b45309;border-radius:20px;padding:2px 8px;letter-spacing:1px;text-transform:uppercase; }
         .nb-ghost { text-decoration:none;font-size:13px;font-weight:500;padding:8px 18px;border-radius:8px;color:#14532d;border:1px solid #16a34a;background:transparent;transition:all .18s; }
@@ -97,7 +99,10 @@ export default function Navbar() {
           <div className="nb-auth">
             {loggedIn ? (
               <div className="nb-user">
-                <div className="nb-avatar">{username.charAt(0).toUpperCase()}</div>
+                {/* Avatar is now a Link to /profile */}
+                <Link to="/profile" className="nb-avatar" title="View Profile">
+                  {username.charAt(0).toUpperCase()}
+                </Link>
                 <span className="nb-uname">{username}</span>
                 {role === "admin" && <span className="nb-admin-badge">Admin</span>}
                 <button className="nb-logout" onClick={handleLogout}>Logout</button>
@@ -119,9 +124,13 @@ export default function Navbar() {
           {visibleLinks.map(({ to, label }) => (
             <Link key={to} to={to} className={`nb-mlink ${isActive(to) ? "active" : ""}`}>{label}</Link>
           ))}
+          {/* Profile link in mobile menu */}
+          {loggedIn && (
+            <Link to="/profile" className="nb-mlink">👤 My Profile</Link>
+          )}
           <div className="nb-mdiv" />
           {loggedIn
-            ? <button className="nb-mlink" style={{ border:"none",background:"none",textAlign:"left",color:"#dc2626",cursor:"pointer" }} onClick={handleLogout}>Logout</button>
+            ? <button className="nb-mlink" style={{ border:"none", background:"none", textAlign:"left", color:"#dc2626", cursor:"pointer" }} onClick={handleLogout}>Logout</button>
             : <>
                 <Link to="/login"    className="nb-mlink">Login</Link>
                 <Link to="/register" className="nb-mlink">Register</Link>
@@ -129,7 +138,7 @@ export default function Navbar() {
           }
         </div>
       </nav>
-      <div style={{ height: 64, background:"#ffffff" }} />
+      <div style={{ height:64, background:"#ffffff" }} />
     </>
   );
 }
