@@ -65,6 +65,7 @@ export default function AdminDashboard() {
   const [loading,    setLoading]    = useState(true);
   const [filterDate, setFilterDate] = useState("");
   const [filterSes,  setFilterSes]  = useState("");
+  const [userSearch, setUserSearch] = useState("");
   const [toast,      setToast]      = useState({ v:false, msg:"" });
 
   // ── Inject fonts ──────────────────────────────────────────────────────────
@@ -475,6 +476,19 @@ export default function AdminDashboard() {
             {tab === "users" && (
               <>
                 <div style={S.sectionTitle}>All Users ({users.length})</div>
+                {/* Search bar */}
+                <div style={S.filterRow} className="admin-filter-row">
+                  <input
+                    style={{ ...S.filterInput, minWidth:260 }}
+                    type="text"
+                    placeholder="🔍 Search by name, username, email or phone..."
+                    value={userSearch}
+                    onChange={e => setUserSearch(e.target.value)}
+                  />
+                  {userSearch && (
+                    <button style={S.btnNeutral} onClick={() => setUserSearch("")}>Clear</button>
+                  )}
+                </div>
                 {users.length === 0 ? (
                   <div style={S.empty}>No users found.</div>
                 ) : (
@@ -488,7 +502,18 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((u, i) => (
+                        {users
+                          .filter(u => {
+                            if (!userSearch) return true;
+                            const q = userSearch.toLowerCase();
+                            return (
+                              u.full_name?.toLowerCase().includes(q) ||
+                              u.username?.toLowerCase().includes(q) ||
+                              u.email?.toLowerCase().includes(q) ||
+                              u.phone?.toLowerCase().includes(q)
+                            );
+                          })
+                          .map((u, i) => (
                           <tr key={u.id} style={S.tr(i%2===0)}>
                             <td style={S.td}>{u.full_name}</td>
                             <td style={S.tdMuted}>{u.username}</td>
