@@ -67,9 +67,9 @@ export default function Register() {
     }
     if (!/\S+@\S+\.\S+/.test(email)) { setError("Please enter a valid email."); return; }
 
-    // Phone validation — Sri Lanka format
+    // Phone validation — Sri Lanka format (local or international, spaces allowed)
     const cleanPhone = phone.replace(/\s+/g, "");
-    const sriLankaPhone = /^(\+94[0-9]{9}|0[0-9]{9})$/;
+    const sriLankaPhone = /^(\+94[\d]{9}|0[\d]{9})$/;
     if (!sriLankaPhone.test(cleanPhone)) {
       setError("Enter a valid Sri Lanka phone number (e.g. 0771234567 or +94771234567)"); return;
     }
@@ -141,7 +141,7 @@ export default function Register() {
             value={form.email} onChange={set("email")} onFocus={focus("email")} onBlur={blur} />
         </div>
 
-        {/* Phone */}
+        {/* Phone — maxLength 20 to allow +94 format with spaces */}
         <div style={S.fw}>
           <label style={S.label}>Phone Number</label>
           <input style={inp("phone")} type="tel" placeholder="0771234567 or +94771234567"
@@ -150,7 +150,10 @@ export default function Register() {
               const val = e.target.value.replace(/[^\d+\s]/g, "");
               setForm(f => ({ ...f, phone: val }));
             }}
-            onFocus={focus("phone")} onBlur={blur} maxLength={15} />
+            onFocus={focus("phone")} onBlur={blur} maxLength={20} />
+          <div style={{ fontSize:11, color:"#6b7280", marginTop:4 }}>
+            Format: 0771234567 or +94771234567
+          </div>
         </div>
 
         {/* Password */}
