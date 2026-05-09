@@ -106,8 +106,8 @@ export default function Home() {
           gap: 10px !important; 
         }
 
-        /* Welcome banner */
-        .home-welcome { padding: 0 16px 16px !important; }
+        /* Welcome banner — needs top gap so it doesn't sit flush against hero */
+        .home-welcome { padding: 20px 16px 0 !important; }
 
         /* CTA */
         .home-cta { padding: 0 16px 32px !important; }
