@@ -286,8 +286,12 @@ export default function AdminDashboard() {
   // Filter + sort bookings
   const filteredBookings = bookings
     .filter(b => {
-      if (filterDate && !b.date.includes(filterDate)) return false;
-      if (filterSes  && b.session !== filterSes) return false;
+      if (filterDate) {
+        const selected = new Date(filterDate).toDateString();
+        const booking  = new Date(b.date).toDateString();
+        if (selected !== booking) return false;
+      }
+      if (filterSes && b.session !== filterSes) return false;
       return true;
     })
     .sort((a, b) => {
