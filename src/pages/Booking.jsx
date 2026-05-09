@@ -536,8 +536,8 @@ export default function Booking() {
       newSelected.delete(i);
       setSelectedSlots(newSelected);
 
-      // Update DB locks — only for regular users
-      if (loggedIn && !isAdmin) {
+      // Update DB locks — for ALL logged in users including admin
+      if (loggedIn) {
         if (newSelected.size === 0) {
           // No slots left — release all locks
           unlockSlots().catch(() => {});
@@ -558,8 +558,23 @@ export default function Booking() {
       return;
     }
 
-    // Admin — just add to selection directly, no per-slot popup
+    // Admin — lock for 2 mins when clicked so others see Processing
+    // at Confirm button admin can extend to 60 mins via Hold option
     if (isAdmin) {
+      try {
+        const allSlots = [...selectedSlots].map(idx => TIME_SLOTS[idx]);
+        allSlots.push(slotStr);
+        await lockSlots({
+          facility_id: f.id,
+          date:        dateISO,
+          session,
+          slots:       allSlots,
+          duration:    2,
+        });
+        loadBookedSlots();
+      } catch (e) {
+        // ignore lock errors for admin — still allow selection
+      }
       setSelectedSlots(prev => { const next = new Set(prev); next.add(i); return next; });
       return;
     }
