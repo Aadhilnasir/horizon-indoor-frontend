@@ -112,10 +112,18 @@ export default function Home() {
         /* CTA */
         .home-cta { padding: 0 16px 32px !important; }
         .home-cta-box { 
-          padding: 28px 20px !important; 
+          padding: 24px 20px !important; 
           flex-direction: column !important;
-          align-items: flex-start !important;
-          gap: 20px !important;
+          align-items: stretch !important;
+          gap: 16px !important;
+        }
+        .home-cta-title { font-size: 32px !important; letter-spacing: 1px !important; }
+        .home-cta-sub { font-size: 13px !important; }
+        .home-cta-btn {
+          width: 100% !important;
+          text-align: center !important;
+          box-sizing: border-box !important;
+          padding: 14px 20px !important;
         }
 
         /* Footer */
@@ -318,10 +326,10 @@ export default function Home() {
           <div style={S.cta} className="home-cta">
             <div style={S.ctaBox} className="home-cta-box">
               <div>
-                <div style={S.ctaTitle}>Ready to Play?</div>
-                <div style={S.ctaSub}>Register for free and book your first session today.</div>
+                <div style={S.ctaTitle} className="home-cta-title">Ready to Play?</div>
+                <div style={S.ctaSub} className="home-cta-sub">Register for free and book your first session today.</div>
               </div>
-              <Link to="/register" style={{ ...S.btnP, fontSize:16 }}>GET STARTED</Link>
+              <Link to="/register" style={{ ...S.btnP, fontSize:16 }} className="home-cta-btn">GET STARTED</Link>
             </div>
           </div>
         )}
