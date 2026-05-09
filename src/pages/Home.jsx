@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { getFacilities, isLoggedIn, getUsername } from "../api";
 
 const S = {
-  page: { fontFamily:"'DM Sans',sans-serif", background:"linear-gradient(180deg, #f0fdf4 0%, #ffffff 40%)", minHeight:"100vh", color:"#14532d", position:"relative", display:"flex", flexDirection:"column" },
+  page: { fontFamily:"'DM Sans',sans-serif", background:"linear-gradient(180deg, #f0fdf4 0%, #ffffff 40%)", minHeight:"100vh", color:"#14532d", position:"relative", display:"flex", flexDirection:"column", overflowX:"hidden" },
   lines: { position:"fixed", inset:0, background:"repeating-linear-gradient(90deg,transparent,transparent 120px,rgba(22,163,74,0.03) 120px,rgba(22,163,74,0.03) 121px),repeating-linear-gradient(0deg,transparent,transparent 80px,rgba(22,163,74,0.03) 80px,rgba(22,163,74,0.03) 81px)", pointerEvents:"none", zIndex:0 },
   content: { flex:1 },
 
@@ -24,8 +24,8 @@ const S = {
   welcomeSub: { fontSize:13, color:"#6b7280", marginTop:4 },
 
   // Stats
-  statsRow: { position:"relative", zIndex:1, maxWidth:900, margin:"0 auto", padding:"32px 40px", display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 },
-  statCard: { flex:1, minWidth:180, background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:16, padding:"28px 24px", borderTop:"3px solid #16a34a", boxShadow:"0 4px 20px rgba(22,163,74,0.08)", transition:"transform .2s, box-shadow .2s" },
+  statsRow: { position:"relative", zIndex:1, maxWidth:900, margin:"0 auto", padding:"32px 40px", display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, width:"100%", boxSizing:"border-box" },
+  statCard: { flex:1, minWidth:0, background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:16, padding:"28px 24px", borderTop:"3px solid #16a34a", boxShadow:"0 4px 20px rgba(22,163,74,0.08)", transition:"transform .2s, box-shadow .2s", boxSizing:"border-box" },
   statNum: { fontFamily:"'Bebas Neue',sans-serif", fontSize:52, color:"#16a34a", lineHeight:1, letterSpacing:2, marginBottom:8, textShadow:"0 0 20px rgba(22,163,74,0.25)" },
   statLabel: { fontSize:13, color:"#6b7280", marginTop:6, fontWeight:500 },
 
@@ -96,7 +96,15 @@ export default function Home() {
         .home-stats-row { 
           grid-template-columns: repeat(2, 1fr) !important; 
           padding: 20px 16px !important; 
-          gap: 10px !important; 
+          gap: 10px !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
+        }
+        .home-stats-row > div {
+          min-width: 0 !important;
+          box-sizing: border-box !important;
+          padding: 20px 16px !important;
         }
 
         /* Facilities */
