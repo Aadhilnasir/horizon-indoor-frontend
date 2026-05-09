@@ -36,8 +36,7 @@ const EyeClosed = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="no
 export default function Register() {
   const navigate = useNavigate();
 
-  const [form,     setForm]     = useState({ firstName:"", lastName:"", username:"", email:"", phone:"", password:"", confirm:"", adminCode:"" });
-  const [isAdmin,  setIsAdmin]  = useState(false);
+  const [form,     setForm]     = useState({ firstName:"", lastName:"", username:"", email:"", phone:"", password:"", confirm:"" });
   const [error,    setError]    = useState("");
   const [success,  setSuccess]  = useState("");
   const [loading,  setLoading]  = useState(false);
@@ -60,7 +59,7 @@ export default function Register() {
 
   const handleSubmit = async () => {
     setError(""); setSuccess("");
-    const { firstName, lastName, username, email, phone, password, confirm, adminCode } = form;
+    const { firstName, lastName, username, email, phone, password, confirm } = form;
 
     if (!firstName || !lastName || !username || !email || !phone || !password || !confirm) {
       setError("Please fill in all fields."); return;
@@ -76,7 +75,6 @@ export default function Register() {
 
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     if (password !== confirm) { setError("Passwords do not match."); return; }
-    if (isAdmin && !adminCode) { setError("Please enter the admin secret code."); return; }
 
     setLoading(true);
     try {
@@ -88,11 +86,10 @@ export default function Register() {
         phone,
         password,
         password_confirmation: confirm,
-        role:                  isAdmin ? "admin" : "user",
-        admin_code:            isAdmin ? adminCode : undefined,
+        role:                  "user",
       });
       setSuccess(`Account created! Welcome, ${data.user.username}`);
-      setTimeout(() => navigate(data.user.role === "admin" ? "/admin" : "/dashboard"), 1000);
+      setTimeout(() => navigate("/dashboard"), 1000);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -181,22 +178,6 @@ export default function Register() {
             </button>
           </div>
         </div>
-
-        {/* Admin toggle */}
-        <div style={S.adminToggle} onClick={() => setIsAdmin(a => !a)}>
-          <div style={S.adminBox(isAdmin)}>
-            {isAdmin && <span style={{ fontSize:11, color:"#ffffff", fontWeight:700 }}>✓</span>}
-          </div>
-          <span style={S.adminLabel}>Register as Admin</span>
-        </div>
-
-        {isAdmin && (
-          <div style={S.adminNote}>
-            <div style={S.adminNoteText}>⚠️ Enter the admin secret code provided by your system administrator</div>
-            <input style={{ ...inp("adminCode"), marginTop:4 }} type="password" placeholder="Admin secret code"
-              value={form.adminCode} onChange={set("adminCode")} onFocus={focus("adminCode")} onBlur={blur} />
-          </div>
-        )}
 
         <button style={{ ...S.btn, ...(loading ? S.btnLoading : {}) }} onClick={handleSubmit} disabled={loading}>
           {loading ? "CREATING..." : "CREATE ACCOUNT"}
