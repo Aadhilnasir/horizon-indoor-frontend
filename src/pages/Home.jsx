@@ -82,9 +82,14 @@ export default function Home() {
     style.id = "home-mobile-css";
     style.innerHTML = `
       @media (max-width: 768px) {
-        /* Hero */
-        .home-hero { padding: 28px 16px 24px !important; }
+        /* ── Hero: shrink to content height — removes giant empty dark space ── */
+        .home-hero-section {
+          min-height: 0 !important;
+          padding-bottom: 48px !important;
+        }
+        .home-hero { padding: 24px 16px 20px !important; }
         .home-h1 { font-size: 46px !important; letter-spacing: 2px !important; }
+        .home-sub { font-size: 14px !important; }
         .home-btn-row { flex-wrap: wrap !important; gap: 10px !important; }
 
         /* Stats */
@@ -122,10 +127,16 @@ export default function Home() {
         }
         .home-footer-grid > div { font-size: 14px !important; }
         .home-footer-grid a, .home-footer-grid div { font-size: 13px !important; }
+        .home-footer-bottom {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+          gap: 6px !important;
+        }
       }
 
       @media (max-width: 480px) {
-        .home-h1 { font-size: 38px !important; }
+        .home-hero-section { padding-bottom: 44px !important; }
+        .home-h1 { font-size: 36px !important; }
         .home-footer-grid { grid-template-columns: 1fr !important; }
         .home-facility-grid { grid-template-columns: repeat(2, 1fr) !important; }
       }
@@ -150,6 +161,7 @@ export default function Home() {
     }, 4000);
     return () => clearInterval(timer);
   }, []);
+
   const navigate   = useNavigate();
   const [facilities, setFacilities] = useState([]);
   const [loggedIn,   setLoggedIn]   = useState(false);
@@ -192,8 +204,9 @@ export default function Home() {
       <div style={S.content}>
 
         {/* ── HERO ── */}
-        <div style={{ position:"relative", overflow:"hidden", minHeight:600 }}>
-          {/* Slideshow images */}
+        {/* CHANGE 1: added className="home-hero-section" — mobile CSS targets this to kill the empty gap */}
+        <div className="home-hero-section" style={{ position:"relative", overflow:"hidden", minHeight:600 }}>
+          {/* Slideshow background images */}
           {slideshowPhotos.map((src, i) => (
             <div key={i} style={{
               position:"absolute", inset:0,
@@ -214,30 +227,31 @@ export default function Home() {
               <div key={i} onClick={() => setSlideIndex(i)} style={{ width: i===slideIndex ? 24 : 8, height:8, borderRadius:4, background: i===slideIndex ? "#4ade80" : "rgba(255,255,255,0.4)", cursor:"pointer", transition:"all .3s" }} />
             ))}
           </div>
+          {/* Hero content */}
           <div style={{ ...S.hero, position:"relative", zIndex:2 }} className="home-hero">
-          <div style={S.badge} className="home-badge">🏟️ Horizon Indoor Complex</div>
-          <h1 style={S.h1} className="home-h1">
-            Book Your <span style={S.h1a}>Court.</span><br />
-            Play Your <span style={S.h1a}>Game.</span>
-          </h1>
-          <p style={S.sub} className="home-sub">
-            Reserve badminton courts, cricket nets, football grounds, volleyball courts
-            and more — instantly online. Day and night sessions available.
-          </p>
-          <div style={S.btnRow} className="home-btn-row">
-            <Link to="/booking" style={S.btnP}>Book Now</Link>
-            {!loggedIn && (
-              <Link to="/register" style={S.btnS}>Create Account</Link>
-            )}
-          </div>
-          <a
-            href="https://maps.app.goo.gl/QgJ2E8Ay8GK2NF8X6"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display:"inline-flex", alignItems:"center", gap:8, marginTop:16, textDecoration:"none", background:"rgba(255,255,255,0.15)", color:"#ffffff", fontSize:13, fontWeight:600, padding:"8px 16px", borderRadius:8, border:"1px solid rgba(255,255,255,0.4)", cursor:"pointer" }}
-          >
-            📍 Madawala Bazzar, Kandy — View on Google Maps
-          </a>
+            <div style={S.badge} className="home-badge">🏟️ Horizon Indoor Complex</div>
+            <h1 style={S.h1} className="home-h1">
+              Book Your <span style={S.h1a}>Court.</span><br />
+              Play Your <span style={S.h1a}>Game.</span>
+            </h1>
+            <p style={S.sub} className="home-sub">
+              Reserve badminton courts, cricket nets, football grounds, volleyball courts
+              and more — instantly online. Day and night sessions available.
+            </p>
+            <div style={S.btnRow} className="home-btn-row">
+              <Link to="/booking" style={S.btnP}>Book Now</Link>
+              {!loggedIn && (
+                <Link to="/register" style={S.btnS}>Create Account</Link>
+              )}
+            </div>
+            <a
+              href="https://maps.app.goo.gl/QgJ2E8Ay8GK2NF8X6"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:8, marginTop:16, textDecoration:"none", background:"rgba(255,255,255,0.15)", color:"#ffffff", fontSize:13, fontWeight:600, padding:"8px 16px", borderRadius:8, border:"1px solid rgba(255,255,255,0.4)", cursor:"pointer" }}
+            >
+              📍 Madawala Bazzar, Kandy — View on Google Maps
+            </a>
           </div>
         </div>
 
@@ -359,7 +373,6 @@ export default function Home() {
                 <span style={S.footerItemIcon}>📍</span>
                 Madawala Bazzar, Kandy
               </a>
-
               <div style={S.footerItem}>
                 <span style={S.footerItemIcon}>🌐</span>
                 horizon-indoor.com
@@ -387,7 +400,6 @@ export default function Home() {
             <div style={S.footerCopy}>
               © 2026 Horizon Indoor. All rights reserved.
             </div>
-            {/* ── Creator credit ── */}
             <div style={S.footerCredit}>
               Designed & Developed by{" "}
               <span style={S.footerCreditName}>Aadhil Nazir</span>
