@@ -16,7 +16,6 @@ const DAYS_FULL   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"
 const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-
 // Holidays loaded from database via API — no hardcoded dates here
 // Gets populated on page mount from GET /api/holidays?year=XXXX
 let SL_HOLIDAYS = {};
@@ -188,11 +187,11 @@ const S = {
   totalPrice: n => ({ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color: n?"#3b82f6":"#16a34a", letterSpacing:1 }),
   spacer: { flex:1 },
   loginBanner: { background:"#dcfce7", border:"1px solid #16a34a", borderRadius:12, padding:"14px 18px", fontSize:13, color:"#16a34a", marginBottom:16, textAlign:"center", lineHeight:1.6 },
-  btnConfirm: (d,n) => ({ width:"100%", padding:18, background: d?"#f0f7f0":(n?"linear-gradient(135deg,#2563eb,#3b82f6)":"#16a34a"), border:`1px solid ${d?"#d1e7d1":"transparent"}`, borderRadius:14, fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3, color: d?"#9ca3af":"#ffffff", cursor: d?"not-allowed":"pointer", marginBottom:12, transition:"all .25s" }),
+  btnConfirm: (d,n) => ({ width:"100%", padding:18, background: d?"#f0f7f0":(n?"linear-gradient(135deg,#2563eb,#3b82f6)":"#16a34a"), border:`1px solid ${d?"#d1e7d1":"transparent"}`, borderRadius:14, fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3, color: d?"#9ca3af":(n?"#ffffff":"#ffffff"), cursor: d?"not-allowed":"pointer", marginBottom:12, transition:"all .25s" }),
   btnClear: { width:"100%", padding:12, background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:500, color:"#6b7280", cursor:"pointer" },
   toast: v => ({ position:"fixed", bottom:32, left:"50%", transform: v?"translateX(-50%) translateY(0)":"translateX(-50%) translateY(20px)", background:"#16a34a", color:"#f0f7f0", fontWeight:700, fontSize:14, padding:"14px 28px", borderRadius:20, opacity: v?1:0, transition:"all .4s cubic-bezier(0.34,1.56,0.64,1)", zIndex:999, whiteSpace:"normal", maxWidth:"90vw", textAlign:"center", pointerEvents:"none" }),
 
-  // Payment modal
+  // ── PAYMENT MODAL ─────────────────────────────────────────────────────────
   payOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" },
   payBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"32px", minWidth:340, maxWidth:420, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.15)" },
   payTitle: { fontFamily:"'Bebas Neue',sans-serif", fontSize:28, letterSpacing:2, color:"#14532d", marginBottom:4 },
@@ -210,7 +209,7 @@ const S = {
   payCancelBtn: { padding:"14px 20px", background:"#f0f7f0", border:"1px solid #d1e7d1", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:500, color:"#6b7280", cursor:"pointer" },
   payError: { fontSize:12, color:"#dc2626", marginTop:4 },
 
-  // Admin slot info modal
+  // ── ADMIN SLOT INFO MODAL ─────────────────────────────────────────────────
   modalOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" },
   modalBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"32px", minWidth:320, maxWidth:400, position:"relative" },
   modalTitle: { fontFamily:"'Bebas Neue',sans-serif", fontSize:24, letterSpacing:2, color:"#14532d", marginBottom:4 },
@@ -224,7 +223,7 @@ const S = {
 
   // ── ADMIN ACTION MODAL ────────────────────────────────────────────────────
   adminActionOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 },
-  adminActionBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"28px", minWidth:320, maxWidth:380, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.2)" },
+  adminActionBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"28px", minWidth:320, maxWidth:400, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.2)" },
   adminActionTitle: { fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, color:"#14532d", marginBottom:4 },
   adminActionSlot: { fontSize:12, color:"#6b7280", marginBottom:20 },
   adminActionBtn: (color, bg) => ({ width:"100%", padding:"14px 18px", marginBottom:10, background:bg, border:`1px solid ${color}`, borderRadius:12, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", transition:"all .18s" }),
@@ -268,15 +267,16 @@ export default function Booking() {
   const [lockExpiry,       setLockExpiry]       = useState(null);
   const [timeLeft,         setTimeLeft]         = useState(600);
   const [lockError,        setLockError]        = useState("");
-  const [slotModal,        setSlotModal]        = useState(null);
+  const [slotModal,        setSlotModal]        = useState(null); // { slot, info }
 
   // ── Admin action modal state ──────────────────────────────────────────────
-  const [adminActionModal, setAdminActionModal] = useState(null); // { slotStr, slotIdx }
-  const [adminAction,      setAdminAction]      = useState("self");
+  // adminActionModal is now a boolean — opens from Confirm button, not per-slot
+  const [adminActionModal, setAdminActionModal] = useState(false);
+  const [adminAction,      setAdminAction]      = useState("self"); // 'self' | 'guest' | 'hold'
   const [guestName,        setGuestName]        = useState("");
   const [guestPhone,       setGuestPhone]       = useState("");
-  const [adminHeldSlots,   setAdminHeldSlots]   = useState({});
-  const [holdTimers,       setHoldTimers]       = useState({});
+  const [adminHeldSlots,   setAdminHeldSlots]   = useState({}); // {slotStr: expiryISO}
+  const [holdTimers,       setHoldTimers]       = useState({}); // {slotStr: secondsLeft}
 
   const isNight    = session === "night";
   const TIME_SLOTS = isNight ? NIGHT_SLOTS : DAY_SLOTS;
@@ -295,17 +295,20 @@ export default function Booking() {
     setLoggedIn(isLoggedIn());
     setIsAdmin(getRole() === "admin");
 
+    // Load facilities
     getFacilities()
       .then(d => setFacilities(d.facilities))
       .catch(() => showToast("Failed to load facilities"))
       .finally(() => setLoadingFacility(false));
 
+    // Load holidays for current year and next year from DB
     const currentYear = new Date().getFullYear();
     Promise.all([
       getHolidays(currentYear),
       getHolidays(currentYear + 1),
     ]).then(([r1, r2]) => {
       const all = [...(r1.holidays || []), ...(r2.holidays || [])];
+      // Build lookup object { "2026-04-14": "Sinhala & Tamil New Year" }
       const lookup = {};
       all.forEach(h => { lookup[h.date] = h.name; });
       SL_HOLIDAYS = lookup;
@@ -362,12 +365,13 @@ export default function Booking() {
 
   // ── Calendar navigation ───────────────────────────────────────────────────
   const prevMonth = () => {
-    if (calYear === today.getFullYear() && calMonth === today.getMonth()) return;
+    if (calYear === today.getFullYear() && calMonth === today.getMonth()) return; // can't go before current month
     if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); }
     else setCalMonth(m => m-1);
   };
 
   const nextMonth = () => {
+    // Allow up to 1 year ahead
     const maxDate = new Date(today.getFullYear(), today.getMonth() + 12, 1);
     const nextM   = calMonth === 11 ? 0 : calMonth + 1;
     const nextY   = calMonth === 11 ? calYear + 1 : calYear;
@@ -388,6 +392,7 @@ export default function Booking() {
   const handleSessionChange = s => { setSession(s); setSelectedSlots(new Set()); };
   const handleFacilitySelect = idx => { setSelectedFacility(idx); setSelectedSlots(new Set()); };
 
+  // Release admin hold on a specific held slot
   const handleReleaseHold = async (slotStr) => {
     if (!window.confirm(`Release hold on ${slotStr}?`)) return;
     try {
@@ -401,6 +406,7 @@ export default function Booking() {
     }
   };
 
+  // Admin clicks a booked slot — fetch who booked it
   const handleAdminSlotClick = async (slotStr) => {
     if (selectedFacility === null) return;
     const f = facilities[selectedFacility];
@@ -413,42 +419,108 @@ export default function Booking() {
   };
 
   // ── Admin action modal handlers ───────────────────────────────────────────
+  // Called when admin picks an option in the Confirm modal
+
   const handleAdminActionSelect = async (action) => {
     setAdminAction(action);
+
     if (action === "self") {
-      setSelectedSlots(prev => { const next = new Set(prev); next.add(adminActionModal.slotIdx); return next; });
-      setAdminActionModal(null);
+      // Book all selected slots directly under admin — no payment modal
+      const f        = facilities[selectedFacility];
+      const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
+      setConfirming(true);
+      try {
+        await createBooking({
+          facility_id: f.id,
+          date:        dateISO,
+          session,
+          slots:       newSlots,
+          paid_amount: 0,
+          guest_name:  null,
+          guest_phone: null,
+        });
+        showToast("🎉 Booking Confirmed!");
+        setSelectedFacility(null);
+        setSelectedSlots(new Set());
+        setBookedSlots([]);
+        setAdminAction("self");
+        loadBookedSlots();
+      } catch (e) {
+        showToast("❌ " + e.message);
+      } finally {
+        setConfirming(false);
+      }
+      setAdminActionModal(false);
+
     } else if (action === "hold") {
-      const f = facilities[selectedFacility];
+      // Lock ALL currently selected slots for 60 minutes
+      const f        = facilities[selectedFacility];
+      const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
       try {
         const res = await lockSlots({
           facility_id: f.id,
           date:        dateISO,
           session,
-          slots:       [adminActionModal.slotStr],
+          slots:       newSlots,
           duration:    60,
         });
-        setAdminHeldSlots(prev => ({ ...prev, [adminActionModal.slotStr]: res.expires_at }));
-        setHoldTimers(prev => ({ ...prev, [adminActionModal.slotStr]: 3600 }));
-        showToast("⏳ Slot held for 1 hour!");
+        // Track every held slot with the same expiry time
+        const newHolds  = {};
+        const newTimers = {};
+        newSlots.forEach(s => {
+          newHolds[s]  = res.expires_at;
+          newTimers[s] = 3600;
+        });
+        setAdminHeldSlots(prev => ({ ...prev, ...newHolds }));
+        setHoldTimers(prev => ({ ...prev, ...newTimers }));
+        // Clear selection — slots move to hold state
+        setSelectedSlots(new Set());
+        showToast(`⏳ ${newSlots.length} slot${newSlots.length > 1 ? "s" : ""} held for 1 hour!`);
         loadBookedSlots();
       } catch (e) {
         showToast("❌ " + e.message);
       }
-      setAdminActionModal(null);
+      setAdminActionModal(false);
     }
-    // For 'guest' — keep modal open to show form
+    // For 'guest' — keep modal open to show the name/phone form
   };
 
-  const handleGuestBook = () => {
+  // Confirm guest booking — books all selected slots for a walk-in customer
+  const handleGuestBook = async () => {
     if (!guestName.trim() || !guestPhone.trim()) {
       showToast("Please enter customer name and phone");
       return;
     }
-    setSelectedSlots(prev => { const next = new Set(prev); next.add(adminActionModal.slotIdx); return next; });
-    setAdminActionModal(null);
+    const f        = facilities[selectedFacility];
+    const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
+    setConfirming(true);
+    try {
+      await createBooking({
+        facility_id: f.id,
+        date:        dateISO,
+        session,
+        slots:       newSlots,
+        paid_amount: 0,
+        guest_name:  guestName,
+        guest_phone: guestPhone,
+      });
+      showToast("🎉 Booking Confirmed for " + guestName + "!");
+      setSelectedFacility(null);
+      setSelectedSlots(new Set());
+      setBookedSlots([]);
+      setGuestName("");
+      setGuestPhone("");
+      setAdminAction("self");
+      loadBookedSlots();
+    } catch (e) {
+      showToast("❌ " + e.message);
+    } finally {
+      setConfirming(false);
+    }
+    setAdminActionModal(false);
   };
 
+  // ── Slot toggle — admin selects freely, no per-slot popup ─────────────────
   const handleSlotToggle = async (slotStr) => {
     if (selectedFacility === null) { showToast("Please select a facility first"); return; }
     if (isSlotPast(slotStr, selectedDate)) return;
@@ -458,16 +530,19 @@ export default function Booking() {
     const i = TIME_SLOTS.indexOf(slotStr);
     const f = facilities[selectedFacility];
 
-    // If deselecting
+    // If deselecting — remove from selection and update locks
     if (selectedSlots.has(i)) {
       const newSelected = new Set(selectedSlots);
       newSelected.delete(i);
       setSelectedSlots(newSelected);
 
-      if (loggedIn) {
+      // Update DB locks — only for regular users
+      if (loggedIn && !isAdmin) {
         if (newSelected.size === 0) {
+          // No slots left — release all locks
           unlockSlots().catch(() => {});
         } else {
+          // Re-lock remaining slots
           const remainingSlots = [...newSelected].map(idx => TIME_SLOTS[idx]);
           lockSlots({
             facility_id: f.id,
@@ -477,21 +552,19 @@ export default function Booking() {
             duration:    2,
           }).catch(() => {});
         }
+        // Refresh so other users see the change
         setTimeout(() => loadBookedSlots(), 500);
       }
       return;
     }
 
-    // Admin: show 3-option action popup
+    // Admin — just add to selection directly, no per-slot popup
     if (isAdmin) {
-      setAdminAction("self");
-      setGuestName("");
-      setGuestPhone("");
-      setAdminActionModal({ slotStr, slotIdx: i });
+      setSelectedSlots(prev => { const next = new Set(prev); next.add(i); return next; });
       return;
     }
 
-    // Regular user — lock slot immediately
+    // Regular user — lock slot immediately (2 min) when clicked
     if (loggedIn) {
       try {
         const allSlots = [...selectedSlots].map(idx => TIME_SLOTS[idx]);
@@ -501,9 +574,10 @@ export default function Booking() {
           date:        dateISO,
           session,
           slots:       allSlots,
-          duration:    2,
+          duration:    2, // 2 mins when slot clicked
         });
         setSelectedSlots(prev => { const next = new Set(prev); next.add(i); return next; });
+        // Refresh to show locked status to other users
         loadBookedSlots();
       } catch (e) {
         if (e.message.includes("being processed")) {
@@ -543,7 +617,7 @@ export default function Booking() {
     return () => clearInterval(interval);
   }, [adminHeldSlots, loadBookedSlots]);
 
-  // Release locks on unmount — but NOT for admin holds
+  // Release locks when user leaves page — but NOT for admin holds
   useEffect(() => {
     return () => {
       if (loggedIn && !isAdmin) {
@@ -552,6 +626,7 @@ export default function Booking() {
     };
   }, [loggedIn, isAdmin]);
 
+  // Payment modal countdown
   useEffect(() => {
     if (!showPayModal || !lockExpiry) return;
     const interval = setInterval(() => {
@@ -569,41 +644,23 @@ export default function Booking() {
     return () => clearInterval(interval);
   }, [showPayModal, lockExpiry]);
 
+  // ── Confirm button handler ────────────────────────────────────────────────
   const handleConfirm = async () => {
     if (!loggedIn) { navigate("/login"); return; }
-    const f        = facilities[selectedFacility];
-    const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
     setLockError("");
 
-    // Admin skips payment modal
+    // Admin — open 3-option modal to choose what to do with selected slots
     if (isAdmin) {
-      setConfirming(true);
-      try {
-        await createBooking({
-          facility_id: f.id,
-          date:        dateISO,
-          session,
-          slots:       newSlots,
-          paid_amount: 0,
-          guest_name:  adminAction === "guest" ? guestName : null,
-          guest_phone: adminAction === "guest" ? guestPhone : null,
-        });
-        showToast("🎉 Booking Confirmed!");
-        setSelectedFacility(null);
-        setSelectedSlots(new Set());
-        setBookedSlots([]);
-        setAdminAction("self");
-        setGuestName("");
-        setGuestPhone("");
-      } catch (e) {
-        showToast("❌ " + e.message);
-      } finally {
-        setConfirming(false);
-      }
+      setAdminAction("self");
+      setGuestName("");
+      setGuestPhone("");
+      setAdminActionModal(true);
       return;
     }
 
-    // Regular user — extend lock and show payment modal
+    // Regular user — extend lock to 10 mins and open payment modal
+    const f        = facilities[selectedFacility];
+    const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
     try {
       const res = await lockSlots({
         facility_id: f.id,
@@ -654,6 +711,8 @@ export default function Booking() {
   const calDays         = buildCalendarDays(calYear, calMonth);
   const sortedSlots     = [...selectedSlots].sort((a,b)=>a-b);
   const selectedDayType = getDayType(selectedDate);
+  // Use rate from API (already correct for weekday/weekend/holiday)
+  // Fall back to base facility rate if API rate not loaded yet
   const rate = selectedFacility !== null
     ? (activeRate.day > 0
         ? (isNight ? activeRate.night : activeRate.day)
@@ -675,11 +734,12 @@ export default function Booking() {
           <div style={S.pageLabel}>Horizon Indoor Complex</div>
           <div style={S.pageTitle} className="booking-page-title">Book a <span style={{ color:accentColor }}>Facility</span></div>
 
-          {/* ── CALENDAR ── */}
+          {/* ── CALENDAR DATE PICKER ── */}
           <div style={S.sLabel}>Select Date</div>
           <div style={S.calendarWrap} className="booking-cal">
+            {/* Month navigation */}
             <div style={S.calHeader}>
-              {/* Release All Holds — admin only */}
+              {/* Release All Holds button — admin only */}
               {isAdmin && Object.keys(adminHeldSlots).length > 0 && (
                 <button
                   style={{ width:"100%", padding:12, marginBottom:10, background:"#fffbeb", border:"1px solid #f59e0b", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#b45309", cursor:"pointer" }}
@@ -705,10 +765,13 @@ export default function Booking() {
               <button style={S.calNavBtn} onClick={nextMonth}>›</button>
             </div>
 
+            {/* Day labels */}
             <div style={S.calGrid} className="booking-cal-grid">
               {DAYS_SHORT.map(d => (
                 <div key={d} style={S.calDayLabel}>{d.slice(0,2)}</div>
               ))}
+
+              {/* Calendar days */}
               {calDays.map((day, i) => {
                 if (!day) return <div key={`empty-${i}`} />;
                 const isPast     = day < today;
@@ -716,6 +779,7 @@ export default function Booking() {
                 const isSelected = isSameDay(day, selectedDate);
                 const isDisabled = isPast;
                 const dayType    = getDayType(day);
+
                 return (
                   <div
                     key={i}
@@ -729,12 +793,14 @@ export default function Booking() {
               })}
             </div>
 
+            {/* Calendar legend */}
             <div style={S.calLegend}>
               <div style={S.calLegendItem}><div style={S.calLegendDot("#16a34a")} /> Weekday</div>
               <div style={S.calLegendItem}><div style={S.calLegendDot("#3b82f6")} /> Weekend</div>
               <div style={S.calLegendItem}><div style={S.calLegendDot("#ff8080")} /> Holiday</div>
             </div>
 
+            {/* Selected date label */}
             <div style={S.calSelectedLabel}>
               <span style={S.calSelIcon}>📅</span>
               <span style={S.calSelText}>
@@ -806,7 +872,7 @@ export default function Booking() {
           {loadingSlots ? (
             <div style={S.loadingBox}>Checking availability...</div>
           ) : isBlocked ? (
-            <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:12, padding:"32px 24px", textAlign:"center" }}>
+            <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:12, padding:"32px 24px", textAlign:"center", gridColumn:"1/-1" }}>
               <div style={{ fontSize:32, marginBottom:12 }}>🚫</div>
               <div style={{ fontSize:16, fontWeight:700, color:"#dc2626", marginBottom:8 }}>Facility Unavailable</div>
               <div style={{ fontSize:14, color:"#6b7280" }}>This facility is not available on the selected date.</div>
@@ -891,15 +957,6 @@ export default function Booking() {
             }
           </div>
 
-          {/* Guest info in summary */}
-          {isAdmin && adminAction === "guest" && guestName && (
-            <div style={S.sumRow}>
-              <div style={S.sumKey}>Booked For</div>
-              <div style={S.sumVal(false)}>{guestName}</div>
-              <div style={{ fontSize:12, color:"#6b7280", marginTop:4 }}>📞 {guestPhone}</div>
-            </div>
-          )}
-
           {canConfirm && (
             <div style={{ marginBottom:20 }}>
               <div style={S.durRow}>
@@ -934,24 +991,35 @@ export default function Booking() {
         </div>
       </div>
 
-      {/* ── ADMIN ACTION MODAL ── */}
+      {/* ── ADMIN ACTION MODAL — triggered from CONFIRM BOOKING button ── */}
       {adminActionModal && (
-        <div style={S.adminActionOverlay} onClick={() => setAdminActionModal(null)}>
+        <div style={S.adminActionOverlay} onClick={() => setAdminActionModal(false)}>
           <div style={S.adminActionBox} onClick={e => e.stopPropagation()}>
-            <div style={S.adminActionTitle}>Slot Action</div>
-            <div style={S.adminActionSlot}>🕐 {adminActionModal.slotStr} · {isNight ? "Night 🌙" : "Day ☀️"}</div>
+            <div style={S.adminActionTitle}>Confirm Booking</div>
+            {/* Summary of selected slots */}
+            <div style={S.adminActionSlot}>
+              📋 {selectedSlots.size} slot{selectedSlots.size > 1 ? "s" : ""} selected &nbsp;·&nbsp;
+              {isNight ? "Night 🌙" : "Day ☀️"} &nbsp;·&nbsp;
+              LKR {total.toLocaleString()} total
+            </div>
 
             {/* Option 1 — Book for Myself */}
-            <div style={S.adminActionBtn("#16a34a", adminAction==="self" ? "#f0fdf4" : "#ffffff")} onClick={() => handleAdminActionSelect("self")}>
+            <div
+              style={S.adminActionBtn("#16a34a", adminAction==="self" ? "#f0fdf4" : "#ffffff")}
+              onClick={() => handleAdminActionSelect("self")}
+            >
               <span style={S.adminActionBtnIcon}>👤</span>
               <div>
                 <span style={S.adminActionBtnTitle("#14532d")}>Book for Myself</span>
-                <span style={S.adminActionBtnSub}>Select slot and confirm normally</span>
+                <span style={S.adminActionBtnSub}>Confirm all slots under admin account</span>
               </div>
             </div>
 
             {/* Option 2 — Book for Customer */}
-            <div style={S.adminActionBtn("#3b82f6", adminAction==="guest" ? "#eff6ff" : "#ffffff")} onClick={() => setAdminAction("guest")}>
+            <div
+              style={S.adminActionBtn("#3b82f6", adminAction==="guest" ? "#eff6ff" : "#ffffff")}
+              onClick={() => setAdminAction("guest")}
+            >
               <span style={S.adminActionBtnIcon}>🧑‍💼</span>
               <div>
                 <span style={S.adminActionBtnTitle("#1d4ed8")}>Book for Customer</span>
@@ -959,37 +1027,53 @@ export default function Booking() {
               </div>
             </div>
 
-            {/* Guest form */}
+            {/* Guest form — visible when 'guest' is selected */}
             {adminAction === "guest" && (
               <div style={{ padding:"12px 16px", background:"#eff6ff", borderRadius:10, border:"1px solid #bfdbfe", marginBottom:10 }}>
                 <label style={S.adminInputLabel}>Customer Name</label>
-                <input style={S.adminInput} placeholder="Enter customer name" value={guestName} onChange={e => setGuestName(e.target.value)} />
+                <input
+                  style={S.adminInput}
+                  placeholder="Enter customer name"
+                  value={guestName}
+                  onChange={e => setGuestName(e.target.value)}
+                />
                 <label style={S.adminInputLabel}>Customer Phone</label>
-                <input style={S.adminInput} placeholder="0771234567" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} />
+                <input
+                  style={S.adminInput}
+                  placeholder="0771234567"
+                  value={guestPhone}
+                  onChange={e => setGuestPhone(e.target.value)}
+                />
                 <button
-                  style={{ width:"100%", padding:"10px", background:"#2563eb", border:"none", borderRadius:8, color:"#ffffff", fontWeight:700, fontSize:13, cursor:"pointer", marginTop:4 }}
+                  style={{ width:"100%", padding:"10px", background:"#2563eb", border:"none", borderRadius:8, color:"#ffffff", fontWeight:700, fontSize:13, cursor: confirming ? "not-allowed" : "pointer", marginTop:4, opacity: confirming ? 0.6 : 1 }}
                   onClick={handleGuestBook}
+                  disabled={confirming}
                 >
-                  Confirm Customer Booking
+                  {confirming ? "Confirming..." : "Confirm Customer Booking"}
                 </button>
               </div>
             )}
 
-            {/* Option 3 — Hold */}
-            <div style={S.adminActionBtn("#f59e0b", adminAction==="hold" ? "#fffbeb" : "#ffffff")} onClick={() => handleAdminActionSelect("hold")}>
+            {/* Option 3 — Hold All Selected Slots */}
+            <div
+              style={S.adminActionBtn("#f59e0b", adminAction==="hold" ? "#fffbeb" : "#ffffff")}
+              onClick={() => handleAdminActionSelect("hold")}
+            >
               <span style={S.adminActionBtnIcon}>⏳</span>
               <div>
                 <span style={S.adminActionBtnTitle("#b45309")}>Hold / Processing</span>
-                <span style={S.adminActionBtnSub}>Lock slot for 1 hour — others see Processing</span>
+                <span style={S.adminActionBtnSub}>
+                  Lock all {selectedSlots.size} slot{selectedSlots.size > 1 ? "s" : ""} for 1 hour — others see Processing
+                </span>
               </div>
             </div>
 
-            <button style={S.adminActionCancelBtn} onClick={() => setAdminActionModal(null)}>Cancel</button>
+            <button style={S.adminActionCancelBtn} onClick={() => setAdminActionModal(false)}>Cancel</button>
           </div>
         </div>
       )}
 
-      {/* Admin slot info modal */}
+      {/* ── ADMIN SLOT INFO MODAL — click a booked slot to see who booked it ── */}
       {slotModal && (
         <div style={S.modalOverlay} onClick={() => setSlotModal(null)}>
           <div style={S.modalBox} onClick={e => e.stopPropagation()}>
@@ -1020,7 +1104,9 @@ export default function Booking() {
                   </div>
                 </div>
                 {slotModal.info.is_shadow && (
-                  <div style={S.modalVia}>⚠️ Auto-blocked via: {slotModal.info.booked_via}</div>
+                  <div style={S.modalVia}>
+                    ⚠️ Auto-blocked via: {slotModal.info.booked_via}
+                  </div>
                 )}
               </>
             ) : (
@@ -1032,7 +1118,7 @@ export default function Booking() {
         </div>
       )}
 
-      {/* ── PAYMENT MODAL ── */}
+      {/* ── PAYMENT MODAL — regular users only ── */}
       {showPayModal && (
         <div style={S.payOverlay} onClick={() => !confirming && setShowPayModal(false)}>
           <div style={S.payBox} onClick={e => e.stopPropagation()}>
@@ -1044,6 +1130,7 @@ export default function Booking() {
             </div>
             <div style={S.paySub}>Pay a minimum deposit of LKR 500 now. Remaining balance to be paid at the venue.</div>
 
+            {/* Booking summary */}
             <div style={S.payRow}>
               <span style={S.payLabel}>Facility</span>
               <span style={S.payVal}>{facilities[selectedFacility]?.name}</span>
@@ -1061,6 +1148,7 @@ export default function Booking() {
               <span style={S.payTotal}>LKR {total.toLocaleString()}</span>
             </div>
 
+            {/* Amount input */}
             <div style={S.payInputWrap}>
               <label style={S.payInputLabel}>Pay Now (LKR)</label>
               <input
@@ -1075,6 +1163,7 @@ export default function Booking() {
               {paidAmount > total && <div style={S.payError}>⚠️ Cannot exceed total amount</div>}
             </div>
 
+            {/* Balance info */}
             <div style={S.payMsg}>
               💰 Paying now: <strong>LKR {paidAmount.toLocaleString()}</strong>
               {paidAmount < total && (
@@ -1084,7 +1173,11 @@ export default function Booking() {
             </div>
 
             <div style={S.payBtnRow}>
-              <button style={S.payCancelBtn} onClick={() => { setShowPayModal(false); setLockedSlots([]); setLockExpiry(null); unlockSlots().catch(()=>{}); }} disabled={confirming}>
+              <button
+                style={S.payCancelBtn}
+                onClick={() => { setShowPayModal(false); setLockedSlots([]); setLockExpiry(null); unlockSlots().catch(()=>{}); }}
+                disabled={confirming}
+              >
                 Cancel
               </button>
               <button
