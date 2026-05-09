@@ -479,7 +479,7 @@ export default function AdminDashboard() {
                 {/* Search bar */}
                 <div style={S.filterRow} className="admin-filter-row">
                   <input
-                    style={{ ...S.filterInput, minWidth:400 }}
+                    style={{ ...S.filterInput, minWidth:350 }}
                     type="text"
                     placeholder="🔍 Search by name, username, email or phone..."
                     value={userSearch}
