@@ -67,12 +67,127 @@ export default function AdminDashboard() {
   const [filterSes,  setFilterSes]  = useState("");
   const [toast,      setToast]      = useState({ v:false, msg:"" });
 
+  // ── Inject fonts ──────────────────────────────────────────────────────────
   useEffect(() => {
     const link = document.createElement("link");
     link.rel  = "stylesheet";
     link.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap";
     document.head.appendChild(link);
     return () => document.head.removeChild(link);
+  }, []);
+
+  // ── Inject mobile CSS ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.id = "admin-mobile-css";
+    style.innerHTML = `
+      @media (max-width: 768px) {
+        /* Page padding */
+        .admin-inner { padding: 24px 16px !important; }
+
+        /* Title */
+        .admin-title { font-size: 36px !important; }
+
+        /* Period filter pills — wrap nicely */
+        .admin-period-row { gap: 6px !important; }
+        .admin-period-btn { font-size: 11px !important; padding: 6px 12px !important; }
+
+        /* Stats: 2 columns, 5th card spans full width */
+        .admin-stats {
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 10px !important;
+          margin-bottom: 24px !important;
+        }
+        .admin-stats > div:nth-child(5) {
+          grid-column: 1 / -1 !important;
+        }
+
+        /* Tabs: horizontal scroll, no wrap */
+        .admin-tabs {
+          width: 100% !important;
+          overflow-x: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+          scrollbar-width: none !important;
+          white-space: nowrap !important;
+          display: flex !important;
+          box-sizing: border-box !important;
+        }
+        .admin-tabs::-webkit-scrollbar { display: none !important; }
+        .admin-tabs button {
+          flex-shrink: 0 !important;
+          padding: 8px 14px !important;
+          font-size: 11px !important;
+          white-space: nowrap !important;
+        }
+
+        /* Filter row: stack vertically */
+        .admin-filter-row {
+          flex-direction: column !important;
+          align-items: stretch !important;
+          gap: 8px !important;
+        }
+        .admin-filter-row input,
+        .admin-filter-row select,
+        .admin-filter-row button {
+          width: 100% !important;
+          box-sizing: border-box !important;
+        }
+
+        /* Tables: horizontal scroll */
+        .admin-table-wrap {
+          overflow-x: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+          border-radius: 10px !important;
+          border: 1px solid #d1e7d1 !important;
+        }
+        .admin-table {
+          min-width: 700px !important;
+          font-size: 11px !important;
+        }
+        .admin-table th { padding: 8px 10px !important; font-size: 9px !important; }
+        .admin-table td { padding: 10px 10px !important; font-size: 11px !important; }
+
+        /* Block dates form: stack vertically */
+        .admin-block-form {
+          grid-template-columns: 1fr !important;
+          gap: 10px !important;
+        }
+        .admin-block-form select,
+        .admin-block-form input {
+          width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        .admin-block-form button {
+          width: 100% !important;
+        }
+
+        /* Holiday add form: stack */
+        .admin-holiday-form {
+          flex-direction: column !important;
+          align-items: stretch !important;
+        }
+        .admin-holiday-form > div,
+        .admin-holiday-form input,
+        .admin-holiday-form button {
+          width: 100% !important;
+          box-sizing: border-box !important;
+        }
+
+        /* Generate buttons: wrap */
+        .admin-generate-row {
+          flex-wrap: wrap !important;
+          gap: 8px !important;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .admin-stats { gap: 8px !important; }
+        .admin-table { min-width: 600px !important; }
+        .admin-tabs button { padding: 7px 11px !important; font-size: 10px !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { const s = document.getElementById("admin-mobile-css"); if(s) s.remove(); };
   }, []);
 
   useEffect(() => {
@@ -84,7 +199,7 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       const [s, b, u, f, h, bl] = await Promise.all([
-        adminStats(p), adminAllBookings(), adminAllUsers(), adminGetAllFacilities(), adminGetHolidays(), adminGetFacilityBlocks(), adminGetFacilityBlocks(),
+        adminStats(p), adminAllBookings(), adminAllUsers(), adminGetAllFacilities(), adminGetHolidays(), adminGetFacilityBlocks(),
       ]);
       setStats(s);
       setBookings(b.bookings || []);
@@ -164,11 +279,11 @@ export default function AdminDashboard() {
     try {
       await adminToggleFacility(id);
       showToast("✅ Facility updated");
-      await loadAll(); // reload everything so admin sees correct state
+      await loadAll();
     } catch (e) { showToast(`❌ ${e.message}`); }
   };
 
-  // Filter bookings
+  // Filter + sort bookings
   const filteredBookings = bookings
     .filter(b => {
       if (filterDate && !b.date.includes(filterDate)) return false;
@@ -176,12 +291,10 @@ export default function AdminDashboard() {
       return true;
     })
     .sort((a, b) => {
-      // Sort by date first
       const dateA = new Date(a.date);
       const dateB = new Date(b.date);
       if (dateA - dateB !== 0) return dateA - dateB;
-      // Same date → sort by first slot time
-      const slotA = (a.slots?.[0] || "").split(" – ")[0]; // e.g. "08:00"
+      const slotA = (a.slots?.[0] || "").split(" – ")[0];
       const slotB = (b.slots?.[0] || "").split(" – ")[0];
       return slotA.localeCompare(slotB);
     });
@@ -194,8 +307,8 @@ export default function AdminDashboard() {
         <div style={S.pageTitle} className="admin-title">Horizon <span style={{ color:"#b45309" }}>Control</span></div>
         <div style={S.pageSub}>Manage all bookings, users and facilities from here.</div>
 
-        {/* Period filter */}
-        <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
+        {/* ── Period filter ── */}
+        <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }} className="admin-period-row">
           {[
             { value:"today", label:"Today" },
             { value:"week",  label:"This Week" },
@@ -203,7 +316,7 @@ export default function AdminDashboard() {
             { value:"year",  label:"This Year" },
             { value:"all",   label:"All Time" },
           ].map(({ value, label }) => (
-            <button key={value}
+            <button key={value} className="admin-period-btn"
               style={{ padding:"8px 18px", borderRadius:20, border:"1px solid #d1e7d1", fontSize:12, fontWeight:600, cursor:"pointer", background: period===value ? "#16a34a" : "#ffffff", color: period===value ? "#ffffff" : "#4b7a4b", transition:"all .18s" }}
               onClick={() => { setPeriod(value); loadAll(value); }}
             >
@@ -212,15 +325,15 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Stats */}
+        {/* ── Stats ── */}
         {stats && (
           <div style={S.statsRow} className="admin-stats">
             {[
-              { num: stats.total_bookings,                           label:"Total Bookings",  color:"#16a34a" },
-              { num: `LKR ${(stats.total_revenue||0).toLocaleString()}`, label:"Total Revenue", color:"#3b82f6" },
-              { num: stats.total_users,                              label:"Registered Users",color:"#16a34a" },
-              { num: stats.total_facilities,                         label:"Facilities",      color:"#b45309" },
-              { num: stats.today_bookings,                           label:"Today's Bookings",color:"#16a34a" },
+              { num: stats.total_bookings,                               label:"Total Bookings",   color:"#16a34a" },
+              { num: `LKR ${(stats.total_revenue||0).toLocaleString()}`, label:"Total Revenue",    color:"#3b82f6" },
+              { num: stats.total_users,                                  label:"Registered Users", color:"#16a34a" },
+              { num: stats.total_facilities,                             label:"Facilities",       color:"#b45309" },
+              { num: stats.today_bookings,                               label:"Today's Bookings", color:"#16a34a" },
             ].map(({ num, label, color }) => (
               <div key={label} style={S.statCard}>
                 <div style={S.statAccent(color)} />
@@ -231,9 +344,15 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Tabs */}
+        {/* ── Tabs ── */}
         <div style={S.tabRow} className="admin-tabs">
-          {[["bookings","📋 Bookings"],["users","👤 Users"],["facilities","🏟️ Facilities"],["holidays","🎉 Holidays"],["blocks","🚫 Block Dates"]].map(([k,l]) => (
+          {[
+            ["bookings",   "📋 Bookings"],
+            ["users",      "👤 Users"],
+            ["facilities", "🏟️ Facilities"],
+            ["holidays",   "🎉 Holidays"],
+            ["blocks",     "🚫 Block Dates"],
+          ].map(([k, l]) => (
             <button key={k} style={S.tab(tab===k)} onClick={() => setTab(k)}>{l}</button>
           ))}
         </div>
@@ -247,8 +366,12 @@ export default function AdminDashboard() {
               <>
                 <div style={S.sectionTitle}>All Bookings ({filteredBookings.length})</div>
                 <div style={S.filterRow} className="admin-filter-row">
-                  <input style={S.filterInput} type="date" value={filterDate}
-                    onChange={e => setFilterDate(e.target.value)} placeholder="Filter by date" />
+                  <input
+                    style={S.filterInput}
+                    type="date"
+                    value={filterDate}
+                    onChange={e => setFilterDate(e.target.value)}
+                  />
                   <select style={S.filterInput} value={filterSes} onChange={e => setFilterSes(e.target.value)}>
                     <option value="">All Sessions</option>
                     <option value="day">Day</option>
@@ -261,87 +384,85 @@ export default function AdminDashboard() {
                 {filteredBookings.length === 0 ? (
                   <div style={S.empty}>No bookings found.</div>
                 ) : (
-                  <div className="admin-table-wrap"><table style={S.table} className="admin-table">
-                    <thead>
-                      <tr>
-                        {["User","Facility","Date","Session","Slots","Booked For","Total","Paid","Balance","Action"].map(h => (
-                          <th key={h} style={S.th}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredBookings.map((b, i) => {
-                        const isNight  = b.session === "night";
-
-                        // Grey out only if today AND last slot has already finished
-                        let isFinished = false;
-                        if (b.is_today && b.slots?.length > 0) {
-                          const lastSlot  = b.slots[b.slots.length - 1]; // e.g. "14:00 – 15:00"
-                          const endTime   = lastSlot.split(" – ")[1];    // "15:00"
-                          const [h, m]    = endTime.split(":").map(Number);
-                          const slotEnd   = new Date();
-                          slotEnd.setHours(h, m, 0, 0);
-                          isFinished = new Date() >= slotEnd;
-                        }
-
-                        return (
-                          <tr key={b.id} style={{
-                            ...S.tr(i%2===0),
-                            opacity: isFinished ? 0.4 : 1,
-                            filter:  isFinished ? "grayscale(40%)" : "none",
-                          }}>
-                            <td style={S.td}>
-                              <div style={{ fontWeight:600, display:"flex", alignItems:"center", gap:6 }}>
-                                {b.user}
-                                {isFinished && <span style={{ fontSize:10, background:"#d1e7d1", color:"#6b7280", borderRadius:4, padding:"1px 6px" }}>Done</span>}
-                                {b.is_today && !isFinished && <span style={{ fontSize:10, background:"#dcfce7", color:"#16a34a", borderRadius:4, padding:"1px 6px", border:"1px solid #16a34a" }}>Today</span>}
-                              </div>
-                              <div style={{ fontSize:11, color:"#6b7280" }}>{b.user_email}</div>
-                            </td>
-                            <td style={S.td}>{b.facility}</td>
-                            <td style={S.tdMuted}>{b.date}</td>
-                            <td style={S.td}>
-                              <span style={S.slotPill(isNight)}>{isNight?"🌙 Night":"☀️ Day"}</span>
-                            </td>
-                            <td style={S.td}>
-                              {(b.slots||[]).map(s => <span key={s} style={S.slotPill(isNight)}>{s}</span>)}
-                            </td>
-                            {/* ── Booked For (new) ── */}
-                            <td style={S.td}>
-                              {b.guest_name ? (
-                                <div>
-                                  <div style={{ fontWeight:600, fontSize:13, color:"#14532d" }}>{b.guest_name}</div>
-                                  <div style={{ fontSize:11, color:"#6b7280" }}>📞 {b.guest_phone}</div>
+                  <div className="admin-table-wrap">
+                    <table style={S.table} className="admin-table">
+                      <thead>
+                        <tr>
+                          {["User","Facility","Date","Session","Slots","Booked For","Total","Paid","Balance","Action"].map(h => (
+                            <th key={h} style={S.th}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredBookings.map((b, i) => {
+                          const isNight = b.session === "night";
+                          let isFinished = false;
+                          if (b.is_today && b.slots?.length > 0) {
+                            const lastSlot = b.slots[b.slots.length - 1];
+                            const endTime  = lastSlot.split(" – ")[1];
+                            const [h, m]   = endTime.split(":").map(Number);
+                            const slotEnd  = new Date();
+                            slotEnd.setHours(h, m, 0, 0);
+                            isFinished = new Date() >= slotEnd;
+                          }
+                          return (
+                            <tr key={b.id} style={{
+                              ...S.tr(i%2===0),
+                              opacity: isFinished ? 0.4 : 1,
+                              filter:  isFinished ? "grayscale(40%)" : "none",
+                            }}>
+                              <td style={S.td}>
+                                <div style={{ fontWeight:600, display:"flex", alignItems:"center", gap:6 }}>
+                                  {b.user}
+                                  {isFinished && <span style={{ fontSize:10, background:"#d1e7d1", color:"#6b7280", borderRadius:4, padding:"1px 6px" }}>Done</span>}
+                                  {b.is_today && !isFinished && <span style={{ fontSize:10, background:"#dcfce7", color:"#16a34a", borderRadius:4, padding:"1px 6px", border:"1px solid #16a34a" }}>Today</span>}
                                 </div>
-                              ) : b.is_hold ? (
-                                <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:20, background:"#fffbeb", border:"1px solid #f59e0b", color:"#b45309" }}>⏳ Hold</span>
-                              ) : (
-                                <span style={{ color:"#d1e7d1", fontSize:11 }}>—</span>
-                              )}
-                            </td>
-                            <td style={{ ...S.td, fontFamily:"'Bebas Neue',sans-serif", color:"#16a34a", fontSize:16 }}>
-                              LKR {(b.total||0).toLocaleString()}
-                            </td>
-                            <td style={{ ...S.td, color:"#15803d", fontWeight:600, fontSize:13 }}>
-                              {b.paid_amount > 0 ? `LKR ${b.paid_amount.toLocaleString()}` : '—'}
-                            </td>
-                            <td style={{ ...S.td, fontSize:13 }}>
-                              {b.payment_status === 'paid' ? (
-                                <span style={{ color:"#16a34a", fontWeight:600 }}>Paid ✅</span>
-                              ) : b.payment_status === 'partial' ? (
-                                <span style={{ color:"#dc2626", fontWeight:600 }}>LKR {(b.balance_due||0).toLocaleString()}</span>
-                              ) : (
-                                <span style={{ color:"#9ca3af" }}>—</span>
-                              )}
-                            </td>
-                            <td style={S.td}>
-                              <button style={S.btnDanger} onClick={() => handleCancelBooking(b.id)}>Cancel</button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table></div>
+                                <div style={{ fontSize:11, color:"#6b7280" }}>{b.user_email}</div>
+                              </td>
+                              <td style={S.td}>{b.facility}</td>
+                              <td style={S.tdMuted}>{b.date}</td>
+                              <td style={S.td}>
+                                <span style={S.slotPill(isNight)}>{isNight?"🌙 Night":"☀️ Day"}</span>
+                              </td>
+                              <td style={S.td}>
+                                {(b.slots||[]).map(s => <span key={s} style={S.slotPill(isNight)}>{s}</span>)}
+                              </td>
+                              <td style={S.td}>
+                                {b.guest_name ? (
+                                  <div>
+                                    <div style={{ fontWeight:600, fontSize:13, color:"#14532d" }}>{b.guest_name}</div>
+                                    <div style={{ fontSize:11, color:"#6b7280" }}>📞 {b.guest_phone}</div>
+                                  </div>
+                                ) : b.is_hold ? (
+                                  <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:20, background:"#fffbeb", border:"1px solid #f59e0b", color:"#b45309" }}>⏳ Hold</span>
+                                ) : (
+                                  <span style={{ color:"#d1e7d1", fontSize:11 }}>—</span>
+                                )}
+                              </td>
+                              <td style={{ ...S.td, fontFamily:"'Bebas Neue',sans-serif", color:"#16a34a", fontSize:16 }}>
+                                LKR {(b.total||0).toLocaleString()}
+                              </td>
+                              <td style={{ ...S.td, color:"#15803d", fontWeight:600, fontSize:13 }}>
+                                {b.paid_amount > 0 ? `LKR ${b.paid_amount.toLocaleString()}` : '—'}
+                              </td>
+                              <td style={{ ...S.td, fontSize:13 }}>
+                                {b.payment_status === 'paid' ? (
+                                  <span style={{ color:"#16a34a", fontWeight:600 }}>Paid ✅</span>
+                                ) : b.payment_status === 'partial' ? (
+                                  <span style={{ color:"#dc2626", fontWeight:600 }}>LKR {(b.balance_due||0).toLocaleString()}</span>
+                                ) : (
+                                  <span style={{ color:"#9ca3af" }}>—</span>
+                                )}
+                              </td>
+                              <td style={S.td}>
+                                <button style={S.btnDanger} onClick={() => handleCancelBooking(b.id)}>Cancel</button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </>
             )}
@@ -353,40 +474,42 @@ export default function AdminDashboard() {
                 {users.length === 0 ? (
                   <div style={S.empty}>No users found.</div>
                 ) : (
-                  <div className="admin-table-wrap"><table style={S.table} className="admin-table">
-                    <thead>
-                      <tr>
-                        {["Name","Username","Email","Phone","Role","Bookings","Joined","Actions"].map(h => (
-                          <th key={h} style={S.th}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.map((u, i) => (
-                        <tr key={u.id} style={S.tr(i%2===0)}>
-                          <td style={S.td}>{u.full_name}</td>
-                          <td style={S.tdMuted}>{u.username}</td>
-                          <td style={S.tdMuted}>{u.email}</td>
-                          <td style={S.tdMuted}>{u.phone}</td>
-                          <td style={S.td}>
-                            <span style={u.role==="admin" ? S.adminBadge : S.userBadge}>
-                              {u.role==="admin" ? "⚡ Admin" : "User"}
-                            </span>
-                          </td>
-                          <td style={S.tdMuted}>{u.bookings_count}</td>
-                          <td style={S.tdMuted}>{u.joined}</td>
-                          <td style={{ ...S.td, display:"flex", gap:6, flexWrap:"wrap" }}>
-                            <button style={S.btnWarning} onClick={() => handleChangeRole(u.id, u.role)}>
-                              {u.role==="admin" ? "Make User" : "Make Admin"}
-                            </button>
-                            {u.role !== "admin" && (
-                              <button style={S.btnDanger} onClick={() => handleDeleteUser(u.id, u.username)}>Delete</button>
-                            )}
-                          </td>
+                  <div className="admin-table-wrap">
+                    <table style={S.table} className="admin-table">
+                      <thead>
+                        <tr>
+                          {["Name","Username","Email","Phone","Role","Bookings","Joined","Actions"].map(h => (
+                            <th key={h} style={S.th}>{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table></div>
+                      </thead>
+                      <tbody>
+                        {users.map((u, i) => (
+                          <tr key={u.id} style={S.tr(i%2===0)}>
+                            <td style={S.td}>{u.full_name}</td>
+                            <td style={S.tdMuted}>{u.username}</td>
+                            <td style={S.tdMuted}>{u.email}</td>
+                            <td style={S.tdMuted}>{u.phone}</td>
+                            <td style={S.td}>
+                              <span style={u.role==="admin" ? S.adminBadge : S.userBadge}>
+                                {u.role==="admin" ? "⚡ Admin" : "User"}
+                              </span>
+                            </td>
+                            <td style={S.tdMuted}>{u.bookings_count}</td>
+                            <td style={S.tdMuted}>{u.joined}</td>
+                            <td style={{ ...S.td, display:"flex", gap:6, flexWrap:"wrap" }}>
+                              <button style={S.btnWarning} onClick={() => handleChangeRole(u.id, u.role)}>
+                                {u.role==="admin" ? "Make User" : "Make Admin"}
+                              </button>
+                              {u.role !== "admin" && (
+                                <button style={S.btnDanger} onClick={() => handleDeleteUser(u.id, u.username)}>Delete</button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </>
             )}
@@ -405,7 +528,7 @@ export default function AdminDashboard() {
                     Automatically generates all Poya (full moon) days and fixed public holidays for a year.
                     Admin only needs to manually add variable holidays like Id-Ul-Fitr, Good Friday, Deepavali.
                   </div>
-                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }} className="admin-generate-row">
                     {[new Date().getFullYear(), new Date().getFullYear()+1, new Date().getFullYear()+2].map(y => (
                       <button key={y} style={S.btnWarning} onClick={() => handleGenerateHolidays(y)}>
                         Generate {y}
@@ -414,9 +537,10 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {/* Add holiday form */}
                 <div style={{ background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:16, padding:"20px 24px", marginBottom:24 }}>
                   <div style={{ fontSize:13, fontWeight:600, color:"#14532d", marginBottom:16 }}>Add Variable Holiday Manually</div>
-                  <div style={{ display:"flex", gap:12, flexWrap:"wrap", alignItems:"flex-end" }}>
+                  <div style={{ display:"flex", gap:12, flexWrap:"wrap", alignItems:"flex-end" }} className="admin-holiday-form">
                     <div>
                       <div style={S.th}>Date</div>
                       <input
@@ -443,35 +567,37 @@ export default function AdminDashboard() {
                 {holidays.length === 0 ? (
                   <div style={S.empty}>No holidays added yet.</div>
                 ) : (
-                  <div className="admin-table-wrap"><table style={S.table} className="admin-table">
-                    <thead>
-                      <tr>
-                        {["Date","Holiday Name","Year","Type","Action"].map(h => (
-                          <th key={h} style={S.th}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {holidays.map((h, i) => (
-                        <tr key={h.id} style={S.tr(i%2===0)}>
-                          <td style={{...S.td, fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:"#ff8080"}}>{h.date}</td>
-                          <td style={S.td}>{h.name}</td>
-                          <td style={S.tdMuted}>{h.year}</td>
-                          <td style={S.td}>
-                            <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:20,
-                              background: h.type==="auto" ? "rgba(160,196,255,0.1)" : "rgba(200,245,58,0.1)",
-                              border: `1px solid ${h.type==="auto" ? "rgba(160,196,255,0.3)" : "rgba(200,245,58,0.3)"}`,
-                              color: h.type==="auto" ? "#3b82f6" : "#16a34a" }}>
-                              {h.type==="auto" ? "Auto" : "Manual"}
-                            </span>
-                          </td>
-                          <td style={S.td}>
-                            <button style={S.btnDanger} onClick={() => handleDeleteHoliday(h.id, h.name)}>Delete</button>
-                          </td>
+                  <div className="admin-table-wrap">
+                    <table style={S.table} className="admin-table">
+                      <thead>
+                        <tr>
+                          {["Date","Holiday Name","Year","Type","Action"].map(h => (
+                            <th key={h} style={S.th}>{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table></div>
+                      </thead>
+                      <tbody>
+                        {holidays.map((h, i) => (
+                          <tr key={h.id} style={S.tr(i%2===0)}>
+                            <td style={{...S.td, fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:"#ff8080"}}>{h.date}</td>
+                            <td style={S.td}>{h.name}</td>
+                            <td style={S.tdMuted}>{h.year}</td>
+                            <td style={S.td}>
+                              <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:20,
+                                background: h.type==="auto" ? "rgba(160,196,255,0.1)" : "rgba(200,245,58,0.1)",
+                                border: `1px solid ${h.type==="auto" ? "rgba(160,196,255,0.3)" : "rgba(200,245,58,0.3)"}`,
+                                color: h.type==="auto" ? "#3b82f6" : "#16a34a" }}>
+                                {h.type==="auto" ? "Auto" : "Manual"}
+                              </span>
+                            </td>
+                            <td style={S.td}>
+                              <button style={S.btnDanger} onClick={() => handleDeleteHoliday(h.id, h.name)}>Delete</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </>
             )}
@@ -481,43 +607,56 @@ export default function AdminDashboard() {
               <>
                 <div style={S.sectionTitle}>Block Facility Dates</div>
                 <div style={{ background:"#fff9f9", border:"1px solid #fecaca", borderRadius:12, padding:"20px 24px", marginBottom:24 }}>
-                  <div style={{ fontSize:13, fontWeight:600, color:"#dc2626", marginBottom:16 }}>🚫 Block a Facility (Tournament / Maintenance / Private Event)</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr auto", gap:12, alignItems:"end" }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:"#dc2626", marginBottom:16 }}>
+                    🚫 Block a Facility (Tournament / Maintenance / Private Event)
+                  </div>
+                  {/* Grid stacks to 1 col on mobile via .admin-block-form */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr auto", gap:12, alignItems:"end" }} className="admin-block-form">
                     <div>
                       <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Facility</div>
-                      <select style={{ ...S.filterInput, width:"100%" }} value={blockForm.facility_id} onChange={e => setBlockForm(f => ({ ...f, facility_id: e.target.value }))}>
+                      <select style={{ ...S.filterInput, width:"100%" }} value={blockForm.facility_id}
+                        onChange={e => setBlockForm(f => ({ ...f, facility_id: e.target.value }))}>
                         <option value="">Select facility</option>
                         {facilities.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                       </select>
                     </div>
                     <div>
                       <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Start Date</div>
-                      <input type="date" style={{ ...S.filterInput, width:"100%" }} value={blockForm.start_date} onChange={e => setBlockForm(f => ({ ...f, start_date: e.target.value }))} />
+                      <input type="date" style={{ ...S.filterInput, width:"100%" }} value={blockForm.start_date}
+                        onChange={e => setBlockForm(f => ({ ...f, start_date: e.target.value }))} />
                     </div>
                     <div>
                       <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>End Date</div>
-                      <input type="date" style={{ ...S.filterInput, width:"100%" }} value={blockForm.end_date} onChange={e => setBlockForm(f => ({ ...f, end_date: e.target.value }))} />
+                      <input type="date" style={{ ...S.filterInput, width:"100%" }} value={blockForm.end_date}
+                        onChange={e => setBlockForm(f => ({ ...f, end_date: e.target.value }))} />
                     </div>
                     <div>
                       <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Reason</div>
-                      <select style={{ ...S.filterInput, width:"100%" }} value={blockForm.reason} onChange={e => setBlockForm(f => ({ ...f, reason: e.target.value }))}>
+                      <select style={{ ...S.filterInput, width:"100%" }} value={blockForm.reason}
+                        onChange={e => setBlockForm(f => ({ ...f, reason: e.target.value }))}>
                         <option value="Tournament">Tournament</option>
                         <option value="Maintenance">Maintenance</option>
                         <option value="Private Event">Private Event</option>
                         <option value="Other">Other</option>
                       </select>
                     </div>
-                    <button style={{ ...S.btnDanger, height:38, whiteSpace:"nowrap" }} disabled={blockSaving} onClick={async () => {
-                      if (!blockForm.facility_id || !blockForm.start_date || !blockForm.end_date) { alert("Please fill all fields."); return; }
-                      setBlockSaving(true);
-                      try {
-                        await adminAddFacilityBlock({ ...blockForm, facility_id: parseInt(blockForm.facility_id) });
-                        const bl = await adminGetFacilityBlocks();
-                        setBlocks(bl.blocks || []);
-                        setBlockForm({ facility_id:"", start_date:"", end_date:"", reason:"Tournament" });
-                      } catch(e) { alert(e.message); }
-                      finally { setBlockSaving(false); }
-                    }}>
+                    <button
+                      style={{ ...S.btnDanger, height:38, whiteSpace:"nowrap" }}
+                      disabled={blockSaving}
+                      onClick={async () => {
+                        if (!blockForm.facility_id || !blockForm.start_date || !blockForm.end_date) {
+                          alert("Please fill all fields."); return;
+                        }
+                        setBlockSaving(true);
+                        try {
+                          await adminAddFacilityBlock({ ...blockForm, facility_id: parseInt(blockForm.facility_id) });
+                          const bl = await adminGetFacilityBlocks();
+                          setBlocks(bl.blocks || []);
+                          setBlockForm({ facility_id:"", start_date:"", end_date:"", reason:"Tournament" });
+                        } catch(e) { alert(e.message); }
+                        finally { setBlockSaving(false); }
+                      }}
+                    >
                       {blockSaving ? "Blocking..." : "Block Dates"}
                     </button>
                   </div>
@@ -526,31 +665,39 @@ export default function AdminDashboard() {
                 {blocks.length === 0 ? (
                   <div style={S.empty}>No blocked dates.</div>
                 ) : (
-                  <div className="admin-table-wrap"><table style={S.table} className="admin-table">
-                    <thead><tr>{["Facility","Start Date","End Date","Reason","Action"].map(h => <th key={h} style={S.th}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {blocks.map(b => (
-                        <tr key={b.id}>
-                          <td style={S.td}>{b.facility}</td>
-                          <td style={S.td}>{b.start_date}</td>
-                          <td style={S.td}>{b.end_date}</td>
-                          <td style={S.td}>
-                            <span style={{ fontSize:11, fontWeight:600, padding:"2px 10px", borderRadius:20, background:"#fef2f2", border:"1px solid #fecaca", color:"#dc2626" }}>
-                              {b.reason}
-                            </span>
-                          </td>
-                          <td style={S.td}>
-                            <button style={S.btnDanger} onClick={async () => {
-                              if (!window.confirm("Remove this block?")) return;
-                              await adminDeleteFacilityBlock(b.id);
-                              const bl = await adminGetFacilityBlocks();
-                              setBlocks(bl.blocks || []);
-                            }}>Remove</button>
-                          </td>
+                  <div className="admin-table-wrap">
+                    <table style={S.table} className="admin-table">
+                      <thead>
+                        <tr>
+                          {["Facility","Start Date","End Date","Reason","Action"].map(h => (
+                            <th key={h} style={S.th}>{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table></div>
+                      </thead>
+                      <tbody>
+                        {blocks.map(b => (
+                          <tr key={b.id}>
+                            <td style={S.td}>{b.facility}</td>
+                            <td style={S.td}>{b.start_date}</td>
+                            <td style={S.td}>{b.end_date}</td>
+                            <td style={S.td}>
+                              <span style={{ fontSize:11, fontWeight:600, padding:"2px 10px", borderRadius:20, background:"#fef2f2", border:"1px solid #fecaca", color:"#dc2626" }}>
+                                {b.reason}
+                              </span>
+                            </td>
+                            <td style={S.td}>
+                              <button style={S.btnDanger} onClick={async () => {
+                                if (!window.confirm("Remove this block?")) return;
+                                await adminDeleteFacilityBlock(b.id);
+                                const bl = await adminGetFacilityBlocks();
+                                setBlocks(bl.blocks || []);
+                              }}>Remove</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </>
             )}
@@ -559,47 +706,49 @@ export default function AdminDashboard() {
             {tab === "facilities" && (
               <>
                 <div style={S.sectionTitle}>All Facilities ({facilities.length})</div>
-                <div className="admin-table-wrap"><table style={S.table} className="admin-table">
-                  <thead>
-                    <tr>
-                      {["Icon","Name","Tag","Day Rate","Night Rate","Linked Courts","Status","Action"].map(h => (
-                        <th key={h} style={S.th}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {facilities.map((f, i) => (
-                      <tr key={f.id} style={S.tr(i%2===0)}>
-                        <td style={S.td}><span style={{ fontSize:24 }}>{f.icon}</span></td>
-                        <td style={S.td}><div style={{ fontWeight:600 }}>{f.name}</div></td>
-                        <td style={S.tdMuted}>{f.tag}</td>
-                        <td style={{ ...S.td, color:"#16a34a", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.day_rate}</td>
-                        <td style={{ ...S.td, color:"#3b82f6", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.night_rate}</td>
-                        <td style={S.td}>
-                          {f.linked_facility_ids?.length > 0
-                            ? <span style={{ fontSize:11, color:"#b45309" }}>
-                                Links to court IDs: {f.linked_facility_ids.join(", ")}
-                              </span>
-                            : <span style={{ color:"#d1e7d1", fontSize:11 }}>None</span>
-                          }
-                        </td>
-                        <td style={S.td}>
-                          <span style={f.is_active ? S.activeBadge : S.inactiveBadge}>
-                            {f.is_active ? "Active" : "Inactive"}
-                          </span>
-                        </td>
-                        <td style={S.td}>
-                          <button
-                            style={f.is_active ? S.btnDanger : S.btnSuccess}
-                            onClick={() => handleToggleFacility(f.id)}
-                          >
-                            {f.is_active ? "Disable" : "Enable"}
-                          </button>
-                        </td>
+                <div className="admin-table-wrap">
+                  <table style={S.table} className="admin-table">
+                    <thead>
+                      <tr>
+                        {["Icon","Name","Tag","Day Rate","Night Rate","Linked Courts","Status","Action"].map(h => (
+                          <th key={h} style={S.th}>{h}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table></div>
+                    </thead>
+                    <tbody>
+                      {facilities.map((f, i) => (
+                        <tr key={f.id} style={S.tr(i%2===0)}>
+                          <td style={S.td}><span style={{ fontSize:24 }}>{f.icon}</span></td>
+                          <td style={S.td}><div style={{ fontWeight:600 }}>{f.name}</div></td>
+                          <td style={S.tdMuted}>{f.tag}</td>
+                          <td style={{ ...S.td, color:"#16a34a", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.day_rate}</td>
+                          <td style={{ ...S.td, color:"#3b82f6", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.night_rate}</td>
+                          <td style={S.td}>
+                            {f.linked_facility_ids?.length > 0
+                              ? <span style={{ fontSize:11, color:"#b45309" }}>
+                                  Links to court IDs: {f.linked_facility_ids.join(", ")}
+                                </span>
+                              : <span style={{ color:"#d1e7d1", fontSize:11 }}>None</span>
+                            }
+                          </td>
+                          <td style={S.td}>
+                            <span style={f.is_active ? S.activeBadge : S.inactiveBadge}>
+                              {f.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+                          <td style={S.td}>
+                            <button
+                              style={f.is_active ? S.btnDanger : S.btnSuccess}
+                              onClick={() => handleToggleFacility(f.id)}
+                            >
+                              {f.is_active ? "Disable" : "Enable"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </>
             )}
           </>
