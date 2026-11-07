@@ -723,6 +723,7 @@ export default function Booking() {
   const handleClear = () => {
     if (loggedIn && selectedSlots.size > 0) unlockSlots().catch(() => {});
     setSelectedFacility(null); setSelectedSlots(new Set());
+    setAdminHeldSlots({}); setHoldTimers({}); // hide hold countdown; empty state also clears its interval
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
