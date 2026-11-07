@@ -720,7 +720,10 @@ export default function Booking() {
     }
   };
 
-  const handleClear = () => { setSelectedFacility(null); setSelectedSlots(new Set()); };
+  const handleClear = () => {
+    if (loggedIn && selectedSlots.size > 0) unlockSlots().catch(() => {});
+    setSelectedFacility(null); setSelectedSlots(new Set());
+  };
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const calDays         = buildCalendarDays(calYear, calMonth);
