@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  adminStats, adminAllBookings, adminCancelBooking,
+  adminStats, adminRevenueRecords, adminAllBookings, adminCancelBooking,
   adminAllUsers, adminDeleteUser, adminChangeRole,
   adminToggleFacility, getFacilities, adminGetAllFacilities,
   adminGetHolidays, adminAddHoliday, adminDeleteHoliday, adminGenerateHolidays,
@@ -67,6 +67,9 @@ export default function AdminDashboard() {
   const [filterSes,  setFilterSes]  = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [toast,      setToast]      = useState({ v:false, msg:"" });
+  // Revenue records popup: null = closed, else { period, loading, error, records, total }
+  const [revenueModal, setRevenueModal] = useState(null);
+  const revenueReqId = useRef(0);
 
   // ── Inject fonts ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -215,6 +218,23 @@ export default function AdminDashboard() {
     }
   };
 
+  // ── Revenue records popup ─────────────────────────────────────────────────
+  const openRevenueModal = async () => {
+    const p     = period;
+    const reqId = ++revenueReqId.current;
+    setRevenueModal({ period:p, loading:true, error:"", records:[], total:0 });
+    try {
+      const res = await adminRevenueRecords(p);
+      if (reqId !== revenueReqId.current) return; // a newer request or close happened
+      setRevenueModal({ period:p, loading:false, error:"", records: res.records || res.bookings || [], total: res.total_revenue || 0 });
+    } catch (e) {
+      if (reqId !== revenueReqId.current) return;
+      setRevenueModal({ period:p, loading:false, error: e.message || "Failed to load revenue records", records:[], total:0 });
+    }
+  };
+
+  const closeRevenueModal = () => { revenueReqId.current++; setRevenueModal(null); };
+
   const showToast = msg => {
     setToast({ v:true, msg });
     setTimeout(() => setToast({ v:false, msg }), 3000);
@@ -340,7 +360,11 @@ export default function AdminDashboard() {
               { num: stats.total_facilities,                             label:"Facilities",       color:"#b45309" },
               { num: stats.today_bookings,                               label:"Today's Bookings", color:"#16a34a" },
             ].map(({ num, label, color }) => (
-              <div key={label} style={S.statCard}>
+              <div key={label}
+                style={label === "Total Revenue" ? { ...S.statCard, cursor:"pointer" } : S.statCard}
+                onClick={label === "Total Revenue" ? openRevenueModal : undefined}
+                title={label === "Total Revenue" ? "View revenue records" : undefined}
+              >
                 <div style={S.statAccent(color)} />
                 <div style={{ ...S.statNum, color }}>{num}</div>
                 <div style={S.statLabel}>{label}</div>
@@ -783,6 +807,87 @@ export default function AdminDashboard() {
           </>
         )}
       </div>
+
+      {/* ── REVENUE RECORDS POPUP ── */}
+      {revenueModal && (
+        <div className="revenue-backdrop" onClick={closeRevenueModal}
+          style={{ position:"fixed", inset:0, background:"rgba(20,83,45,0.35)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}
+        >
+          <style>{`
+            @media print {
+              body * { visibility: hidden !important; }
+              .revenue-print-area, .revenue-print-area * { visibility: visible !important; }
+              .admin-inner, .revenue-no-print { display: none !important; }
+              .revenue-backdrop { position: static !important; background: none !important; padding: 0 !important; display: block !important; }
+              .revenue-print-area {
+                position: absolute !important; top: 0 !important; left: 0 !important;
+                width: 100% !important; max-width: none !important;
+                max-height: none !important; overflow: visible !important;
+                border: none !important; box-shadow: none !important; padding: 0 !important;
+              }
+              .revenue-table-wrap { max-height: none !important; overflow: visible !important; }
+              .revenue-print-area tr { page-break-inside: avoid; }
+            }
+          `}</style>
+          <div className="revenue-print-area" onClick={e => e.stopPropagation()}
+            style={{ background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:16, padding:24, width:"100%", maxWidth:1100, maxHeight:"90vh", display:"flex", flexDirection:"column", boxSizing:"border-box", fontFamily:"'DM Sans',sans-serif", color:"#14532d" }}
+          >
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap", marginBottom:16 }}>
+              <div style={{ ...S.sectionTitle, marginBottom:0 }}>
+                Revenue Records – {({ today:"Today", week:"This Week", month:"This Month", year:"This Year", all:"All Time" })[revenueModal.period] || revenueModal.period}
+              </div>
+              <div className="revenue-no-print" style={{ display:"flex", gap:8 }}>
+                <button style={S.btnSuccess} onClick={() => window.print()} disabled={revenueModal.loading}>Print</button>
+                <button style={S.btnWarning} onClick={() => window.print()} disabled={revenueModal.loading}>Export as PDF</button>
+                <button style={S.btnNeutral} onClick={closeRevenueModal}>Close</button>
+              </div>
+            </div>
+
+            {revenueModal.loading ? (
+              <div style={S.loading}>Loading...</div>
+            ) : revenueModal.error ? (
+              <div style={{ ...S.loading, color:"#dc2626" }}>❌ {revenueModal.error}</div>
+            ) : revenueModal.records.length === 0 ? (
+              <div style={{ ...S.loading }}>No records</div>
+            ) : (
+              <div className="revenue-table-wrap admin-table-wrap" style={{ overflow:"auto", flex:1 }}>
+                <table style={S.table} className="admin-table">
+                  <thead>
+                    <tr>
+                      {["Date","Customer","Facility","Session","Slots","Total","Paid","Balance","Payment Status"].map(h => (
+                        <th key={h} style={S.th}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {revenueModal.records.map((r, idx) => (
+                      <tr key={r.id ?? idx} style={{ ...S.tr(idx % 2 === 0), borderBottom:"1px solid #f0f7f0" }}>
+                        <td style={S.tdMuted}>{r.date}</td>
+                        <td style={S.td}>{r.customer || r.guest_name || r.user || "-"}</td>
+                        <td style={S.td}>{r.facility}</td>
+                        <td style={S.td}>{r.session === "night" ? "Night" : r.session === "day" ? "Day" : r.session}</td>
+                        <td style={S.td}>{(r.slots || []).join(", ")}</td>
+                        <td style={S.td}>LKR {(r.total || 0).toLocaleString()}</td>
+                        <td style={S.td}>LKR {(r.paid_amount || 0).toLocaleString()}</td>
+                        <td style={S.td}>LKR {(r.balance_due || 0).toLocaleString()}</td>
+                        <td style={S.td}>{r.payment_status || "—"}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ borderTop:"2px solid #16a34a" }}>
+                      <td style={{ ...S.td, fontWeight:700 }} colSpan={5}>
+                        Total ({revenueModal.records.length} record{revenueModal.records.length !== 1 ? "s" : ""})
+                      </td>
+                      <td style={{ ...S.td, fontWeight:700, color:"#16a34a" }}>LKR {(revenueModal.total || 0).toLocaleString()}</td>
+                      <td style={S.td} colSpan={3}></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div style={S.toast(toast.v)}>{toast.msg}</div>
     </div>
   );

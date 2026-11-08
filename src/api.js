@@ -1,7 +1,7 @@
 // src/api.js
 // ── Central API service — all calls go through here ─────────────────────────
 
-const BASE = "https://horizon-indoor-backend-production.up.railway.app/api";
+const BASE = import.meta.env.VITE_API_URL || "https://horizon-indoor-backend-production.up.railway.app/api";
 
 async function request(method, path, body = null) {
   const token = localStorage.getItem("token");
@@ -131,6 +131,10 @@ export function adminDeleteHoliday(id) {
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export function adminStats(period = 'all') {
   return request("GET", `/admin/stats?period=${period}`);
+}
+
+export function adminRevenueRecords(period = 'all') {
+  return request("GET", `/admin/revenue?period=${period}`);
 }
 
 export function adminAllBookings(filters = {}) {
