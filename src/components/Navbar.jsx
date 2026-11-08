@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { isLoggedIn, getRole, getUsername, apiLogout } from "../api";
+import { isLoggedIn, getRole, getUsername, apiLogout, getUpcomingBlocks } from "../api";
 
 const LINKS = [
   { to: "/",          label: "Home" },
@@ -9,6 +9,14 @@ const LINKS = [
   { to: "/admin",     label: "Admin Panel", adminOnly: true },
 ];
 
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// "2026-11-15" → "15 Nov 2026"
+const formatBlockDate = (value) => {
+  const [year, month, day] = value.split("-").map(Number);
+  return `${day} ${MONTHS[month - 1]} ${year}`;
+};
+
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -16,6 +24,8 @@ export default function Navbar() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [role,     setRole]     = useState("user");
   const [username, setUsername] = useState("");
+  const [blocksModal, setBlocksModal] = useState(null); // null = closed
+  const blocksRequest = useRef(0); // ignores responses from an earlier open
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
@@ -31,6 +41,25 @@ export default function Navbar() {
     await apiLogout();
     setLoggedIn(false);
     navigate("/login");
+  };
+
+  const openBlocks = async () => {
+    const requestId = ++blocksRequest.current;
+    setMenuOpen(false);
+    setBlocksModal({ loading:true, error:"", blocks:[] });
+    try {
+      const res = await getUpcomingBlocks();
+      if (requestId !== blocksRequest.current) return;
+      setBlocksModal({ loading:false, error:"", blocks: res.blocks || [] });
+    } catch {
+      if (requestId !== blocksRequest.current) return;
+      setBlocksModal({ loading:false, error:"Could not load upcoming blocks. Please try again.", blocks:[] });
+    }
+  };
+
+  const closeBlocks = () => {
+    blocksRequest.current++;
+    setBlocksModal(null);
   };
 
   const visibleLinks = LINKS.filter(({ authOnly, adminOnly, adminHide }) => {
@@ -66,8 +95,24 @@ export default function Navbar() {
         .nb-ghost:hover { color:#14532d;border-color:#14532d;background:#bbf7d0; }
         .nb-solid { text-decoration:none;font-size:13px;font-weight:600;padding:8px 20px;border-radius:8px;color:#f0f7f0;background:#16a34a;border:1px solid #16a34a;transition:background .18s;cursor:pointer; }
         .nb-solid:hover { background:#22c55e; }
+        .nb-blocked { color:#ffffff;font-family:inherit;white-space:nowrap;margin-right:14px; }
+        .nb-blocked:hover { background:#15803d;border-color:#15803d; }
+        @media(max-width:480px){ .nb-blocked{margin-right:4px;} }
         .nb-logout { font-size:13px;font-weight:500;padding:8px 16px;border-radius:8px;color:#14532d;border:1px solid #d1e7d1;background:transparent;cursor:pointer;transition:all .18s; }
         .nb-logout:hover { color:#f87171;border-color:#f87171;background:#ffffff; }
+        button.nb-ghost { cursor:pointer;font-family:inherit;white-space:nowrap; }
+        .nb-blocks-backdrop { position:fixed;inset:0;z-index:1100;background:rgba(20,83,45,0.35);display:flex;align-items:center;justify-content:center;padding:16px;font-family:'DM Sans',sans-serif; }
+        .nb-blocks-card { background:#ffffff;border:1px solid #d1e7d1;border-radius:16px;padding:24px;width:100%;max-width:720px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;color:#14532d; }
+        .nb-blocks-head { display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px; }
+        .nb-blocks-title { font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#14532d;line-height:1.1; }
+        .nb-blocks-msg { text-align:center;color:#6b7280;padding:40px 0;font-size:13px; }
+        .nb-blocks-msg.error { color:#dc2626; }
+        .nb-blocks-wrap { overflow:auto;flex:1;-webkit-overflow-scrolling:touch; }
+        .nb-blocks-table { width:100%;min-width:520px;border-collapse:collapse; }
+        .nb-blocks-table th { text-align:left;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#6b7280;padding:10px 16px;border-bottom:1px solid #d1e7d1;white-space:nowrap; }
+        .nb-blocks-table td { padding:14px 16px;font-size:13px;color:#14532d;border-bottom:1px solid #f0f7f0; }
+        .nb-blocks-table td.date { white-space:nowrap; }
+        @media(max-width:768px){ .nb-blocks-card{padding:16px;} .nb-blocks-title{font-size:20px;} .nb-blocks-table th,.nb-blocks-table td{padding:10px 12px;} }
         .nb-burger { display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;background:none;border:none; }
         .nb-burger span { display:block;width:22px;height:2px;background:#4b7a4b;border-radius:2px;transition:all .22s; }
         .nb-burger.open span:nth-child(1) { transform:translateY(7px) rotate(45deg);background:#16a34a; }
@@ -99,6 +144,7 @@ export default function Navbar() {
           <div className="nb-auth">
             {loggedIn ? (
               <div className="nb-user">
+                <button className="nb-solid nb-blocked" onClick={openBlocks} title="Blocked" aria-label="Blocked">Blocked</button>
                 {/* Avatar is now a Link to /profile */}
                 <Link to="/profile" className="nb-avatar" title="View Profile">
                   {username.charAt(0).toUpperCase()}
@@ -109,6 +155,7 @@ export default function Navbar() {
               </div>
             ) : (
               <>
+                <button className="nb-solid nb-blocked" onClick={openBlocks} title="Blocked" aria-label="Blocked">Blocked</button>
                 <Link to="/login"    className="nb-ghost">Login</Link>
                 <Link to="/register" className="nb-solid">Register</Link>
               </>
@@ -139,6 +186,45 @@ export default function Navbar() {
         </div>
       </nav>
       <div style={{ height:64, background:"#ffffff" }} />
+
+      {blocksModal && (
+        <div className="nb-blocks-backdrop" onClick={closeBlocks}>
+          <div className="nb-blocks-card" role="dialog" aria-modal="true" aria-label="Upcoming Facility Blocks" onClick={e => e.stopPropagation()}>
+            <div className="nb-blocks-head">
+              <div className="nb-blocks-title">Upcoming Facility Blocks</div>
+              <button className="nb-ghost" onClick={closeBlocks}>Close</button>
+            </div>
+
+            {blocksModal.loading ? (
+              <div className="nb-blocks-msg">Loading...</div>
+            ) : blocksModal.error ? (
+              <div className="nb-blocks-msg error">{blocksModal.error}</div>
+            ) : blocksModal.blocks.length === 0 ? (
+              <div className="nb-blocks-msg">No upcoming blocks</div>
+            ) : (
+              <div className="nb-blocks-wrap">
+                <table className="nb-blocks-table">
+                  <thead>
+                    <tr>
+                      {["Facility","From","To","Reason"].map(h => <th key={h}>{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {blocksModal.blocks.map(b => (
+                      <tr key={b.id}>
+                        <td>{b.facility || "-"}</td>
+                        <td className="date">{formatBlockDate(b.start_date)}</td>
+                        <td className="date">{formatBlockDate(b.end_date)}</td>
+                        <td>{b.reason || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
