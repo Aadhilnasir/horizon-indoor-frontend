@@ -96,6 +96,11 @@ export function createBooking(payload) {
   return request("POST", "/bookings", payload);
 }
 
+// ── Facility Blocks (public) ──────────────────────────────────────────────────
+export function getUpcomingBlocks() {
+  return request("GET", "/facility-blocks/upcoming");
+}
+
 // ── Facility Blocks (admin) ───────────────────────────────────────────────────
 export function adminGetFacilityBlocks() {
   return request("GET", "/admin/facility-blocks");
