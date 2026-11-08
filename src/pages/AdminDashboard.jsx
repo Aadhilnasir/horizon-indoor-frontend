@@ -854,7 +854,7 @@ export default function AdminDashboard() {
                 <table style={S.table} className="admin-table">
                   <thead>
                     <tr>
-                      {["Date","Customer","Facility","Session","Slots","Total","Paid","Balance","Payment Status"].map(h => (
+                      {["Date","Customer","Facility","Session","Slots","Total"].map(h => (
                         <th key={h} style={S.th}>{h}</th>
                       ))}
                     </tr>
@@ -868,9 +868,6 @@ export default function AdminDashboard() {
                         <td style={S.td}>{r.session === "night" ? "Night" : r.session === "day" ? "Day" : r.session}</td>
                         <td style={S.td}>{(r.slots || []).join(", ")}</td>
                         <td style={S.td}>LKR {(r.total || 0).toLocaleString()}</td>
-                        <td style={S.td}>LKR {(r.paid_amount || 0).toLocaleString()}</td>
-                        <td style={S.td}>LKR {(r.balance_due || 0).toLocaleString()}</td>
-                        <td style={S.td}>{r.payment_status || "—"}</td>
                       </tr>
                     ))}
                     <tr style={{ borderTop:"2px solid #16a34a" }}>
@@ -878,7 +875,6 @@ export default function AdminDashboard() {
                         Total ({revenueModal.records.length} record{revenueModal.records.length !== 1 ? "s" : ""})
                       </td>
                       <td style={{ ...S.td, fontWeight:700, color:"#16a34a" }}>LKR {(revenueModal.total || 0).toLocaleString()}</td>
-                      <td style={S.td} colSpan={3}></td>
                     </tr>
                   </tbody>
                 </table>
