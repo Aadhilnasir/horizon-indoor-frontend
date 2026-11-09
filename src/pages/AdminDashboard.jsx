@@ -49,6 +49,8 @@ const S = {
   toast: v => ({ position:"fixed", bottom:32, left:"50%", transform: v?"translateX(-50%) translateY(0)":"translateX(-50%) translateY(20px)", background:"#16a34a", color:"#f0f7f0", fontWeight:700, fontSize:14, padding:"14px 28px", borderRadius:100, opacity: v?1:0, transition:"all .4s cubic-bezier(0.34,1.56,0.64,1)", zIndex:9999, whiteSpace:"nowrap", pointerEvents:"none" }),
 };
 
+const reasonBadge = { fontSize:11, fontWeight:600, padding:"2px 10px", borderRadius:20, background:"#fef2f2", border:"1px solid #fecaca", color:"#dc2626" };
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [tab,        setTab]        = useState("bookings");
@@ -60,6 +62,10 @@ export default function AdminDashboard() {
   const [blocks,     setBlocks]     = useState([]);
   const [blockForm,  setBlockForm]  = useState({ facility_id:"", start_date:"", end_date:"", reason:"Tournament" });
   const [blockSaving, setBlockSaving] = useState(false);
+  // Tournament details popup: null = closed, else { tournament_title, sponsor, organizer, error }
+  const [tournamentModal, setTournamentModal] = useState(null);
+  // Read-only tournament details popup: null = closed, else the block being viewed
+  const [viewedBlock, setViewedBlock] = useState(null);
   const [period,     setPeriod]     = useState('all');
   const [newHoliday, setNewHoliday] = useState({ date:"", name:"" });
   const [loading,    setLoading]    = useState(true);
@@ -85,6 +91,9 @@ export default function AdminDashboard() {
     const style = document.createElement("style");
     style.id = "admin-mobile-css";
     style.innerHTML = `
+      .admin-reason-link { transition: background .18s, border-color .18s; }
+      .admin-reason-link:hover { background: #fee2e2 !important; border-color: #dc2626 !important; }
+
       @media (max-width: 768px) {
         /* Page padding */
         .admin-inner { padding: 24px 16px !important; }
@@ -303,6 +312,58 @@ export default function AdminDashboard() {
       await loadAll();
     } catch (e) { showToast(`❌ ${e.message}`); }
   };
+
+  // ── Facility blocks ───────────────────────────────────────────────────────
+  const saveBlock = async (tournamentDetails = {}) => {
+    const fromPopup = blockForm.reason === "Tournament";
+    let saved = false;
+    setBlockSaving(true);
+    try {
+      await adminAddFacilityBlock({ ...blockForm, facility_id: parseInt(blockForm.facility_id), ...tournamentDetails });
+      saved = true;
+      // Clear before refreshing so a failed refresh can't lead to saving the same block twice.
+      setTournamentModal(null);
+      setBlockForm({ facility_id:"", start_date:"", end_date:"", reason:"Tournament" });
+      const bl = await adminGetFacilityBlocks();
+      setBlocks(bl.blocks || []);
+    } catch (e) {
+      if (fromPopup && !saved) setTournamentModal(m => m && { ...m, error: e.message || "Failed to save block" });
+      else alert(e.message);
+    } finally {
+      setBlockSaving(false);
+    }
+  };
+
+  const handleBlockDates = () => {
+    if (!blockForm.facility_id || !blockForm.start_date || !blockForm.end_date) {
+      alert("Please fill all fields."); return;
+    }
+    if (blockForm.end_date < blockForm.start_date) {
+      alert("End date must be on or after the start date."); return;
+    }
+    if (blockForm.reason === "Tournament") {
+      setTournamentModal({ tournament_title:"", sponsor:"", organizer:"", error:"" });
+      return;
+    }
+    saveBlock();
+  };
+
+  const handleSaveTournament = e => {
+    e.preventDefault();
+    if (blockSaving) return;
+    const tournament_title = tournamentModal.tournament_title.trim();
+    const sponsor          = tournamentModal.sponsor.trim();
+    const organizer        = tournamentModal.organizer.trim();
+    if (!tournament_title || !sponsor || !organizer) {
+      setTournamentModal(m => ({ ...m, error:"Tournament Title, Sponsor and Organizer are all required." }));
+      return;
+    }
+    setTournamentModal(m => ({ ...m, error:"" }));
+    saveBlock({ tournament_title, sponsor, organizer });
+  };
+
+  // Cancelling mid-save would imply nothing was saved, so the popup stays until the request ends.
+  const closeTournamentModal = () => { if (!blockSaving) setTournamentModal(null); };
 
   // Filter + sort bookings
   const filteredBookings = bookings
@@ -696,19 +757,7 @@ export default function AdminDashboard() {
                     <button
                       style={{ ...S.btnDanger, height:38, whiteSpace:"nowrap" }}
                       disabled={blockSaving}
-                      onClick={async () => {
-                        if (!blockForm.facility_id || !blockForm.start_date || !blockForm.end_date) {
-                          alert("Please fill all fields."); return;
-                        }
-                        setBlockSaving(true);
-                        try {
-                          await adminAddFacilityBlock({ ...blockForm, facility_id: parseInt(blockForm.facility_id) });
-                          const bl = await adminGetFacilityBlocks();
-                          setBlocks(bl.blocks || []);
-                          setBlockForm({ facility_id:"", start_date:"", end_date:"", reason:"Tournament" });
-                        } catch(e) { alert(e.message); }
-                        finally { setBlockSaving(false); }
-                      }}
+                      onClick={handleBlockDates}
                     >
                       {blockSaving ? "Blocking..." : "Block Dates"}
                     </button>
@@ -734,9 +783,16 @@ export default function AdminDashboard() {
                             <td style={S.td}>{b.start_date}</td>
                             <td style={S.td}>{b.end_date}</td>
                             <td style={S.td}>
-                              <span style={{ fontSize:11, fontWeight:600, padding:"2px 10px", borderRadius:20, background:"#fef2f2", border:"1px solid #fecaca", color:"#dc2626" }}>
-                                {b.reason}
-                              </span>
+                              {b.reason === "Tournament" ? (
+                                <button type="button" className="admin-reason-link" title="View tournament details"
+                                  style={{ ...reasonBadge, cursor:"pointer", fontFamily:"inherit" }}
+                                  onClick={() => setViewedBlock(b)}
+                                >
+                                  {b.reason}
+                                </button>
+                              ) : (
+                                <span style={reasonBadge}>{b.reason}</span>
+                              )}
                             </td>
                             <td style={S.td}>
                               <button style={S.btnDanger} onClick={async () => {
@@ -880,6 +936,81 @@ export default function AdminDashboard() {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── TOURNAMENT DETAILS POPUP ── */}
+      {tournamentModal && (
+        // onMouseDown, so dragging a text selection out of an input doesn't close the popup
+        <div onMouseDown={e => { if (e.target === e.currentTarget) closeTournamentModal(); }}
+          style={{ position:"fixed", inset:0, background:"rgba(20,83,45,0.35)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}
+        >
+          <form onSubmit={handleSaveTournament} noValidate
+            style={{ background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:16, padding:24, width:"100%", maxWidth:440, maxHeight:"90vh", overflowY:"auto", boxSizing:"border-box", fontFamily:"'DM Sans',sans-serif", color:"#14532d" }}
+          >
+            <div style={{ ...S.sectionTitle, marginBottom:16 }}>Tournament Details</div>
+
+            {[
+              ["tournament_title", "Tournament Title"],
+              ["sponsor",          "Sponsor"],
+              ["organizer",        "Organizer"],
+            ].map(([key, label], i) => (
+              <label key={key} style={{ display:"block", marginBottom:12 }}>
+                <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>{label}</div>
+                <input
+                  type="text"
+                  required
+                  autoFocus={i === 0}
+                  maxLength={255}
+                  disabled={blockSaving}
+                  style={{ ...S.filterInput, width:"100%", boxSizing:"border-box" }}
+                  value={tournamentModal[key]}
+                  onChange={e => { const value = e.target.value; setTournamentModal(m => ({ ...m, [key]: value, error:"" })); }}
+                />
+              </label>
+            ))}
+
+            {tournamentModal.error && (
+              <div role="alert" style={{ fontSize:12, color:"#dc2626", marginBottom:12 }}>❌ {tournamentModal.error}</div>
+            )}
+
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginTop:4 }}>
+              <button type="button" style={S.btnNeutral} disabled={blockSaving} onClick={closeTournamentModal}>Cancel</button>
+              <button type="submit" style={S.btnSuccess} disabled={blockSaving}>{blockSaving ? "Saving..." : "Save"}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ── VIEW TOURNAMENT DETAILS POPUP ── */}
+      {viewedBlock && (
+        <div onClick={() => setViewedBlock(null)}
+          style={{ position:"fixed", inset:0, background:"rgba(20,83,45,0.35)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}
+        >
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:16, padding:24, width:"100%", maxWidth:440, maxHeight:"90vh", overflowY:"auto", boxSizing:"border-box", fontFamily:"'DM Sans',sans-serif", color:"#14532d" }}
+          >
+            <div style={{ ...S.sectionTitle, marginBottom:16 }}>Tournament Details</div>
+
+            {viewedBlock.tournament_title || viewedBlock.sponsor || viewedBlock.organizer ? (
+              [
+                ["Tournament Title", viewedBlock.tournament_title || "—"],
+                ["Sponsor",          viewedBlock.sponsor || "—"],
+                ["Organizer",        viewedBlock.organizer || "—"],
+              ].map(([label, value]) => (
+                <div key={label} style={{ marginBottom:12 }}>
+                  <div style={{ fontSize:12, color:"#6b7280", marginBottom:2 }}>{label}</div>
+                  <div style={{ fontSize:14, fontWeight:500, overflowWrap:"anywhere" }}>{value}</div>
+                </div>
+              ))
+            ) : (
+              <div style={{ fontSize:13, color:"#6b7280", marginBottom:12 }}>No tournament details recorded</div>
+            )}
+
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:4 }}>
+              <button type="button" style={S.btnNeutral} onClick={() => setViewedBlock(null)}>Close</button>
+            </div>
           </div>
         </div>
       )}
