@@ -8,19 +8,23 @@
 //  - L.id > M.id (store creates the main row first)
 //
 // Returns the main rows in their original order, each with linkedNames.
-export default function groupLinkedBlocks(blocks = [], facilities = []) {
-  const facilityById = new Map(facilities.map(f => [Number(f.id), f]));
+export default function groupLinkedBlocks(blocks, facilities) {
+  // null / undefined / non-array input is treated as []
+  const list = (Array.isArray(blocks) ? blocks : []).filter(Boolean);
+  const facs = (Array.isArray(facilities) ? facilities : []).filter(Boolean);
+  const facilityById = new Map(facs.map(f => [Number(f.id), f]));
   const claimed = new Set();
   const linkedNamesById = new Map();
 
   // Lowest id first, so a main row is handled before its linked rows
-  const byId = [...blocks].sort((a, b) => Number(a.id) - Number(b.id));
+  const byId = [...list].sort((a, b) => Number(a.id) - Number(b.id));
 
   byId.forEach(m => {
     const mId = Number(m.id);
     if (claimed.has(mId)) return;
 
-    const linkedIds = (facilityById.get(Number(m.facility_id))?.linked_facility_ids || []).map(Number);
+    const rawLinked = facilityById.get(Number(m.facility_id))?.linked_facility_ids;
+    const linkedIds = (Array.isArray(rawLinked) ? rawLinked : []).map(Number);
     const names = [];
 
     linkedIds.forEach(linkedFacilityId => {
@@ -42,7 +46,7 @@ export default function groupLinkedBlocks(blocks = [], facilities = []) {
     linkedNamesById.set(mId, names);
   });
 
-  return blocks
+  return list
     .filter(b => !claimed.has(Number(b.id)))
     .map(b => ({ ...b, linkedNames: linkedNamesById.get(Number(b.id)) || [] }));
 }

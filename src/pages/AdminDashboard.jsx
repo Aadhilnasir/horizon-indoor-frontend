@@ -782,7 +782,7 @@ export default function AdminDashboard() {
                           <tr key={b.id}>
                             <td style={S.td}>
                               {b.facility}
-                              {b.linkedNames.length > 0 && (
+                              {b.linkedNames?.length > 0 && (
                                 <div style={{ fontSize:11, color:"#6b7280" }}>
                                   also blocks: {b.linkedNames.join(", ")}
                                 </div>
