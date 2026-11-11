@@ -64,6 +64,8 @@ export default function AdminDashboard() {
   const [blockSaving, setBlockSaving] = useState(false);
   // Tournament details popup: null = closed, else { tournament_title, sponsor, organizer, error }
   const [tournamentModal, setTournamentModal] = useState(null);
+  // Block save error popup: null = closed, else the error message
+  const [blockError, setBlockError] = useState(null);
   // Read-only tournament details popup: null = closed, else the block being viewed
   const [viewedBlock, setViewedBlock] = useState(null);
   const [period,     setPeriod]     = useState('all');
@@ -328,6 +330,7 @@ export default function AdminDashboard() {
       setBlocks(bl.blocks || []);
     } catch (e) {
       if (fromPopup && !saved) setTournamentModal(m => m && { ...m, error: e.message || "Failed to save block" });
+      else if (!saved) setBlockError(e.message || "Could not block these dates. Please try again.");
       else alert(e.message);
     } finally {
       setBlockSaving(false);
@@ -1010,6 +1013,22 @@ export default function AdminDashboard() {
 
             <div style={{ display:"flex", justifyContent:"flex-end", marginTop:4 }}>
               <button type="button" style={S.btnNeutral} onClick={() => setViewedBlock(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── BLOCK SAVE ERROR POPUP ── */}
+      {blockError && (
+        <div onClick={() => setBlockError(null)}
+          style={{ position:"fixed", inset:0, background:"rgba(20,83,45,0.35)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}
+        >
+          <div role="alertdialog" onClick={e => e.stopPropagation()}
+            style={{ background:"#ffffff", border:"1px solid #fecaca", borderLeft:"4px solid #dc2626", borderRadius:12, padding:20, width:"100%", maxWidth:360, boxSizing:"border-box", fontFamily:"'DM Sans',sans-serif" }}
+          >
+            <div style={{ fontSize:14, color:"#b91c1c", overflowWrap:"anywhere", marginBottom:16 }}>{blockError}</div>
+            <div style={{ display:"flex", justifyContent:"flex-end" }}>
+              <button type="button" autoFocus style={S.btnSuccess} onClick={() => setBlockError(null)}>OK</button>
             </div>
           </div>
         </div>
