@@ -8,6 +8,7 @@ import {
   adminGetFacilityBlocks, adminAddFacilityBlock, adminDeleteFacilityBlock,
   isLoggedIn, getRole,
 } from "../api";
+import groupLinkedBlocks from "../utils/groupLinkedBlocks";
 
 const S = {
   page: { fontFamily:"'DM Sans',sans-serif", background:"#f0f7f0", minHeight:"100vh", color:"#14532d" },
@@ -777,9 +778,16 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {blocks.map(b => (
+                        {groupLinkedBlocks(blocks, facilities).map(b => (
                           <tr key={b.id}>
-                            <td style={S.td}>{b.facility}</td>
+                            <td style={S.td}>
+                              {b.facility}
+                              {b.linkedNames.length > 0 && (
+                                <div style={{ fontSize:11, color:"#6b7280" }}>
+                                  also blocks: {b.linkedNames.join(", ")}
+                                </div>
+                              )}
+                            </td>
                             <td style={S.td}>{b.start_date}</td>
                             <td style={S.td}>{b.end_date}</td>
                             <td style={S.td}>
