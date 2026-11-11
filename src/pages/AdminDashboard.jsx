@@ -416,7 +416,7 @@ export default function AdminDashboard() {
           <div style={S.statsRow} className="admin-stats">
             {[
               { num: stats.total_bookings,                               label:"Total Bookings",   color:"#16a34a" },
-              { num: `LKR ${(stats.total_revenue||0).toLocaleString()}`, label:"Total Revenue",    color:"#3b82f6" },
+              { num: `LKR ${(stats.total_revenue||0).toLocaleString()}/-`, label:"Total Revenue",    color:"#3b82f6" },
               { num: stats.total_users,                                  label:"Registered Users", color:"#16a34a" },
               { num: stats.total_facilities,                             label:"Facilities",       color:"#b45309" },
               { num: stats.today_bookings,                               label:"Today's Bookings", color:"#16a34a" },
@@ -530,16 +530,16 @@ export default function AdminDashboard() {
                                 )}
                               </td>
                               <td style={{ ...S.td, fontFamily:"'Bebas Neue',sans-serif", color:"#16a34a", fontSize:16 }}>
-                                LKR {(b.total||0).toLocaleString()}
+                                LKR {(b.total||0).toLocaleString()}/-
                               </td>
                               <td style={{ ...S.td, color:"#15803d", fontWeight:600, fontSize:13 }}>
-                                {b.paid_amount > 0 ? `LKR ${b.paid_amount.toLocaleString()}` : '—'}
+                                {b.paid_amount > 0 ? `LKR ${b.paid_amount.toLocaleString()}/-` : '—'}
                               </td>
                               <td style={{ ...S.td, fontSize:13 }}>
                                 {b.payment_status === 'paid' ? (
                                   <span style={{ color:"#16a34a", fontWeight:600 }}>Paid ✅</span>
                                 ) : b.payment_status === 'partial' ? (
-                                  <span style={{ color:"#dc2626", fontWeight:600 }}>LKR {(b.balance_due||0).toLocaleString()}</span>
+                                  <span style={{ color:"#dc2626", fontWeight:600 }}>LKR {(b.balance_due||0).toLocaleString()}/-</span>
                                 ) : (
                                   <span style={{ color:"#9ca3af" }}>—</span>
                                 )}
@@ -830,8 +830,8 @@ export default function AdminDashboard() {
                           <td style={S.td}><span style={{ fontSize:24 }}>{f.icon}</span></td>
                           <td style={S.td}><div style={{ fontWeight:600 }}>{f.name}</div></td>
                           <td style={S.tdMuted}>{f.tag}</td>
-                          <td style={{ ...S.td, color:"#16a34a", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.day_rate}</td>
-                          <td style={{ ...S.td, color:"#3b82f6", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.night_rate}</td>
+                          <td style={{ ...S.td, color:"#16a34a", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.day_rate}/-</td>
+                          <td style={{ ...S.td, color:"#3b82f6", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.night_rate}/-</td>
                           <td style={S.td}>
                             {f.linked_facility_ids?.length > 0
                               ? <span style={{ fontSize:11, color:"#b45309" }}>
@@ -923,14 +923,14 @@ export default function AdminDashboard() {
                         <td style={S.td}>{r.facility}</td>
                         <td style={S.td}>{r.session === "night" ? "Night" : r.session === "day" ? "Day" : r.session}</td>
                         <td style={S.td}>{(r.slots || []).join(", ")}</td>
-                        <td style={S.td}>LKR {(r.total || 0).toLocaleString()}</td>
+                        <td style={S.td}>LKR {(r.total || 0).toLocaleString()}/-</td>
                       </tr>
                     ))}
                     <tr style={{ borderTop:"2px solid #16a34a" }}>
                       <td style={{ ...S.td, fontWeight:700 }} colSpan={5}>
                         Total ({revenueModal.records.length} record{revenueModal.records.length !== 1 ? "s" : ""})
                       </td>
-                      <td style={{ ...S.td, fontWeight:700, color:"#16a34a" }}>LKR {(revenueModal.total || 0).toLocaleString()}</td>
+                      <td style={{ ...S.td, fontWeight:700, color:"#16a34a" }}>LKR {(revenueModal.total || 0).toLocaleString()}/-</td>
                     </tr>
                   </tbody>
                 </table>

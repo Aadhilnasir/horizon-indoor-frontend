@@ -84,7 +84,7 @@ export default function Dashboard() {
             { num: bookings.length,                    label:"Total Bookings" },
             { num: `${totalHours} hrs`,                label:"Hours Booked" },
             { num: uniqueCourts,                       label:"Courts Used" },
-            { num: `LKR ${totalSpent.toLocaleString()}`, label:"Total Spent" },
+            { num: `LKR ${totalSpent.toLocaleString()}/-`, label:"Total Spent" },
           ].map(({ num, label }) => (
             <div key={label} style={S.statCard}>
               <div style={S.statAccent} />
@@ -143,11 +143,11 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, flexShrink:0, minWidth:120 }}>
-                  <div style={S.cardTotal}>LKR {(b.total||0).toLocaleString()}</div>
+                  <div style={S.cardTotal}>LKR {(b.total||0).toLocaleString()}/-</div>
                   <div style={S.confirmedBadge}>✓ Confirmed</div>
                   {b.payment_status === 'partial' && (
                     <div style={{ fontSize:11, color:"#dc2626", background:"#fef2f2", border:"1px solid #fecaca", borderRadius:6, padding:"2px 8px", fontWeight:600 }}>
-                      Balance: LKR {b.balance_due.toLocaleString()}
+                      Balance: LKR {b.balance_due.toLocaleString()}/-
                     </div>
                   )}
                   {b.payment_status === 'paid' && (

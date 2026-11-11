@@ -700,7 +700,7 @@ export default function Booking() {
     const f        = facilities[selectedFacility];
     const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
     const paid     = parseInt(paidAmount) || 0;
-    if (paid < 500) { showToast("❌ Minimum deposit is LKR 500"); return; }
+    if (paid < 500) { showToast("❌ Minimum deposit is LKR 500/-"); return; }
     if (paid > total) { showToast("❌ Cannot pay more than total"); return; }
     setConfirming(true);
     try {
@@ -861,7 +861,7 @@ export default function Booking() {
                     <span style={S.fcIcon}>{f.icon}</span>
                     <div style={S.fcName}>{f.name}</div>
                     <div style={S.fcTag}>{f.tag}</div>
-                    <div style={S.fcRate(isNight)}>LKR {getFacilityDisplayRate(f, selectedDate, isNight).toLocaleString()} / hr</div>
+                    <div style={S.fcRate(isNight)}>LKR {getFacilityDisplayRate(f, selectedDate, isNight).toLocaleString()}/- / hr</div>
                   </div>
                 );
               })}
@@ -984,11 +984,11 @@ export default function Booking() {
               </div>
               <div style={S.durRow}>
                 <span style={S.durLabel}>Rate ({isNight?"Night 🌙":"Day ☀️"})</span>
-                <span style={S.durVal}>LKR {(rate||0).toLocaleString()} / hr</span>
+                <span style={S.durVal}>LKR {(rate||0).toLocaleString()}/- / hr</span>
               </div>
               <div style={S.totalRow}>
                 <span style={S.totalLabel}>Total</span>
-                <span style={S.totalPrice(isNight)}>LKR {total.toLocaleString()}</span>
+                <span style={S.totalPrice(isNight)}>LKR {total.toLocaleString()}/-</span>
               </div>
             </div>
           )}
@@ -1019,7 +1019,7 @@ export default function Booking() {
             <div style={S.adminActionSlot}>
               📋 {selectedSlots.size} slot{selectedSlots.size > 1 ? "s" : ""} selected &nbsp;·&nbsp;
               {isNight ? "Night 🌙" : "Day ☀️"} &nbsp;·&nbsp;
-              LKR {total.toLocaleString()} total
+              LKR {total.toLocaleString()}/- total
             </div>
 
             {/* Option 1 — Book for Myself */}
@@ -1147,7 +1147,7 @@ export default function Booking() {
                 ⏱ {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,"0")}
               </div>
             </div>
-            <div style={S.paySub}>Pay a minimum deposit of LKR 500 now. Remaining balance to be paid at the venue.</div>
+            <div style={S.paySub}>Pay a minimum deposit of LKR 500/- now. Remaining balance to be paid at the venue.</div>
 
             {/* Booking summary */}
             <div style={S.payRow}>
@@ -1164,7 +1164,7 @@ export default function Booking() {
             </div>
             <div style={{ ...S.payRow, borderBottom:"none", marginTop:8 }}>
               <span style={{ ...S.payLabel, fontWeight:700, color:"#14532d" }}>Total Amount</span>
-              <span style={S.payTotal}>LKR {total.toLocaleString()}</span>
+              <span style={S.payTotal}>LKR {total.toLocaleString()}/-</span>
             </div>
 
             {/* Amount input */}
@@ -1178,15 +1178,15 @@ export default function Booking() {
                 value={paidAmount}
                 onChange={e => setPaidAmount(Math.min(total, Math.max(0, parseInt(e.target.value) || 0)))}
               />
-              {paidAmount < 500 && <div style={S.payError}>⚠️ Minimum deposit is LKR 500</div>}
+              {paidAmount < 500 && <div style={S.payError}>⚠️ Minimum deposit is LKR 500/-</div>}
               {paidAmount > total && <div style={S.payError}>⚠️ Cannot exceed total amount</div>}
             </div>
 
             {/* Balance info */}
             <div style={S.payMsg}>
-              💰 Paying now: <strong>LKR {paidAmount.toLocaleString()}</strong>
+              💰 Paying now: <strong>LKR {paidAmount.toLocaleString()}/-</strong>
               {paidAmount < total && (
-                <> · Balance at venue: <strong>LKR {(total - paidAmount).toLocaleString()}</strong></>
+                <> · Balance at venue: <strong>LKR {(total - paidAmount).toLocaleString()}/-</strong></>
               )}
               {paidAmount === total && <> · <strong>Full amount paid ✅</strong></>}
             </div>

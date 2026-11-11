@@ -21,7 +21,7 @@ function MyBookings() {
             <p>Date: {b.date}</p>
             <p>Session: {b.session}</p>
             <p>Slots: {b.slots.join(", ")}</p>
-            <p>Total: {b.total}</p>
+            <p>Total: {b.total}/-</p>
           </div>
         ))
       )}
