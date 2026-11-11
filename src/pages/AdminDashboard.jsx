@@ -227,6 +227,24 @@ export default function AdminDashboard() {
     }
   };
 
+  // ── Linked courts a booking also blocks (mirrors SlotLockController@lock) ──
+  const getLinkedCourtNames = (facilityId) => {
+    const id = Number(facilityId);
+    if (!id) return [];
+    const me = facilities.find(f => Number(f.id) === id);
+    const ids = [];
+    // Forward links
+    (me?.linked_facility_ids || []).forEach(l => ids.push(Number(l)));
+    // Reverse links
+    facilities.forEach(f => {
+      if ((f.linked_facility_ids || []).some(l => Number(l) === id)) ids.push(Number(f.id));
+    });
+    return [...new Set(ids)]
+      .filter(fid => fid !== id)
+      .map(fid => facilities.find(f => Number(f.id) === fid)?.name)
+      .filter(Boolean);
+  };
+
   // ── Revenue records popup ─────────────────────────────────────────────────
   const openRevenueModal = async () => {
     const p     = period;
@@ -509,7 +527,17 @@ export default function AdminDashboard() {
                                 </div>
                                 <div style={{ fontSize:11, color:"#6b7280" }}>{b.user_email}</div>
                               </td>
-                              <td style={S.td}>{b.facility}</td>
+                              <td style={S.td}>
+                                {b.facility}
+                                {(() => {
+                                  const names = getLinkedCourtNames(b.facility_id);
+                                  return names.length > 0 && (
+                                    <div style={{ fontSize:11, color:"#6b7280", whiteSpace:"normal", wordBreak:"break-word" }}>
+                                      also blocks: {names.join(", ")}
+                                    </div>
+                                  );
+                                })()}
+                              </td>
                               <td style={S.tdMuted}>{b.date}</td>
                               <td style={S.td}>
                                 <span style={S.slotPill(isNight)}>{isNight?"🌙 Night":"☀️ Day"}</span>
