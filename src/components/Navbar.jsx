@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { isLoggedIn, getRole, getUsername, apiLogout, getUpcomingBlocks } from "../api";
+import { isLoggedIn, getRole, getUsername, apiLogout, getUpcomingBlocks, getFacilities } from "../api";
+import groupLinkedBlocks from "../utils/groupLinkedBlocks";
 
 const LINKS = [
   { to: "/",          label: "Home" },
@@ -48,9 +49,17 @@ export default function Navbar() {
     setMenuOpen(false);
     setBlocksModal({ loading:true, error:"", blocks:[] });
     try {
-      const res = await getUpcomingBlocks();
+      // Facilities are only for the "also blocks" line; if they fail, show blocks ungrouped
+      const [res, fac] = await Promise.all([
+        getUpcomingBlocks(),
+        getFacilities().catch(() => null),
+      ]);
       if (requestId !== blocksRequest.current) return;
-      setBlocksModal({ loading:false, error:"", blocks: res.blocks || [] });
+      const blocks = res.blocks || [];
+      setBlocksModal({
+        loading:false, error:"",
+        blocks: fac ? groupLinkedBlocks(blocks, fac.facilities || []) : blocks,
+      });
     } catch {
       if (requestId !== blocksRequest.current) return;
       setBlocksModal({ loading:false, error:"Could not load upcoming blocks. Please try again.", blocks:[] });
@@ -212,7 +221,14 @@ export default function Navbar() {
                   <tbody>
                     {blocksModal.blocks.map(b => (
                       <tr key={b.id}>
-                        <td>{b.facility || "-"}</td>
+                        <td>
+                          {b.facility || "-"}
+                          {b.linkedNames?.length > 0 && (
+                            <div style={{ fontSize:11, color:"#6b7280" }}>
+                              also blocks: {b.linkedNames.join(", ")}
+                            </div>
+                          )}
+                        </td>
                         <td className="date">{formatBlockDate(b.start_date)}</td>
                         <td className="date">{formatBlockDate(b.end_date)}</td>
                         <td>{b.reason || "-"}</td>
