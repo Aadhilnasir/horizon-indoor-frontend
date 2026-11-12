@@ -153,7 +153,7 @@ export default function Navbar() {
           <div className="nb-auth">
             {loggedIn ? (
               <div className="nb-user">
-                <button className="nb-solid nb-blocked" onClick={openBlocks} title="Blocked" aria-label="Blocked">Blocked</button>
+                <button className="nb-solid nb-blocked" onClick={openBlocks} title="View upcoming blocked facilities" aria-label="Blocked">Blocked</button>
                 {/* Avatar is now a Link to /profile */}
                 <Link to="/profile" className="nb-avatar" title="View Profile">
                   {username.charAt(0).toUpperCase()}
@@ -164,7 +164,7 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <button className="nb-solid nb-blocked" onClick={openBlocks} title="Blocked" aria-label="Blocked">Blocked</button>
+                <button className="nb-solid nb-blocked" onClick={openBlocks} title="View upcoming blocked facilities" aria-label="Blocked">Blocked</button>
                 <Link to="/login"    className="nb-ghost">Login</Link>
                 <Link to="/register" className="nb-solid">Register</Link>
               </>
