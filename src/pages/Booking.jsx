@@ -440,9 +440,7 @@ export default function Booking() {
           guest_phone: null,
         });
         showToast("🎉 Booking Confirmed!");
-        setSelectedFacility(null);
         setSelectedSlots(new Set());
-        setBookedSlots([]);
         setAdminAction("self");
         loadBookedSlots();
       } catch (e) {
@@ -505,9 +503,7 @@ export default function Booking() {
         guest_phone: guestPhone,
       });
       showToast("🎉 Booking Confirmed for " + guestName + "!");
-      setSelectedFacility(null);
       setSelectedSlots(new Set());
-      setBookedSlots([]);
       setGuestName("");
       setGuestPhone("");
       setAdminAction("self");
@@ -709,10 +705,9 @@ export default function Booking() {
       setLockedSlots([]);
       setLockExpiry(null);
       showToast("🎉 Booking Confirmed!");
-      setSelectedFacility(null);
       setSelectedSlots(new Set());
-      setBookedSlots([]);
       setPaidAmount(500);
+      loadBookedSlots();
     } catch (e) {
       showToast(`❌ ${e.message}`);
     } finally {
