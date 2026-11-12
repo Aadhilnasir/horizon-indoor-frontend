@@ -3,7 +3,11 @@
 // FacilityBlockController@store auto-creates into their main row.
 //
 // Row L is a linked row of main row M when:
-//  - M's facility.linked_facility_ids contains L.facility_id (forward links only)
+//  - L.facility_id is a direct link of M's facility: forward (M's
+//    linked_facility_ids contains it) or reverse (its linked_facility_ids
+//    contains M's facility). Not transitive.
+//  - L is not already claimed; at most one row per linked facility per M
+//    (the lowest matching id)
 //  - start_date, end_date and reason are equal
 //  - L.id > M.id (store creates the main row first)
 //
@@ -23,8 +27,21 @@ export default function groupLinkedBlocks(blocks, facilities) {
     const mId = Number(m.id);
     if (claimed.has(mId)) return;
 
-    const rawLinked = facilityById.get(Number(m.facility_id))?.linked_facility_ids;
-    const linkedIds = (Array.isArray(rawLinked) ? rawLinked : []).map(Number);
+    const mFacilityId = Number(m.facility_id);
+
+    // Forward links: M's facility links to them (e.g. Volleyball → Badminton 1, 2)
+    const rawLinked = facilityById.get(mFacilityId)?.linked_facility_ids;
+    const forwardIds = (Array.isArray(rawLinked) ? rawLinked : []).map(Number);
+
+    // Reverse links: facilities that link to M's facility (e.g. Badminton 1 → Volleyball)
+    const reverseIds = facs
+      .filter(f => Array.isArray(f.linked_facility_ids) &&
+        f.linked_facility_ids.map(Number).includes(mFacilityId))
+      .map(f => Number(f.id));
+
+    // Unique, direct links only (not transitive), never M's own facility
+    const linkedIds = [...new Set([...forwardIds, ...reverseIds])]
+      .filter(id => id !== mFacilityId);
     const names = [];
 
     linkedIds.forEach(linkedFacilityId => {
