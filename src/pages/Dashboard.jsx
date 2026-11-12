@@ -90,7 +90,7 @@ export default function Dashboard() {
             { num: bookings.length,                    label:"Total Bookings" },
             { num: `${totalHours} hrs`,                label:"Hours Booked" },
             { num: uniqueCourts,                       label:"Courts Used" },
-            { num: `LKR ${totalSpent.toLocaleString()}`, label:"Total Spent" },
+            { num: `LKR ${totalSpent.toLocaleString()}/-`, label:"Total Spent" },
           ].map(({ num, label }) => (
             <div key={label} style={S.statCard}>
               <div style={S.statAccent} />
