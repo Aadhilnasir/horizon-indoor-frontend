@@ -435,7 +435,7 @@ export default function AdminDashboard() {
           <div style={S.statsRow} className="admin-stats">
             {[
               { num: stats.total_bookings,                               label:"Total Bookings",   color:"#16a34a" },
-              { num: `LKR ${(stats.total_revenue||0).toLocaleString()}`, label:"Total Revenue",    color:"#3b82f6" },
+              { num: `LKR ${(stats.total_revenue||0).toLocaleString()}/-`, label:"Total Revenue",    color:"#3b82f6" },
               { num: stats.total_users,                                  label:"Registered Users", color:"#16a34a" },
               { num: stats.total_facilities,                             label:"Facilities",       color:"#b45309" },
               { num: stats.today_bookings,                               label:"Today's Bookings", color:"#16a34a" },
