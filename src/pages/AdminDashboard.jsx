@@ -438,7 +438,7 @@ export default function AdminDashboard() {
           <div style={S.statsRow} className="admin-stats">
             {[
               { num: stats.total_bookings,                               label:"Total Bookings",   color:"#16a34a" },
-              { num: `LKR ${(stats.total_revenue||0).toLocaleString()}/-`, label:"Total Revenue",    color:"#3b82f6" },
+              { num: `LKR ${Number(stats.total_revenue || 0).toLocaleString("en-US")}/-`, label:"Total Revenue",    color:"#3b82f6" },
               { num: stats.total_users,                                  label:"Registered Users", color:"#16a34a" },
               { num: stats.total_facilities,                             label:"Facilities",       color:"#b45309" },
               { num: stats.today_bookings,                               label:"Today's Bookings", color:"#16a34a" },
@@ -962,14 +962,14 @@ export default function AdminDashboard() {
                         <td style={S.td}>{r.facility}</td>
                         <td style={S.td}>{r.session === "night" ? "Night" : r.session === "day" ? "Day" : r.session}</td>
                         <td style={S.td}>{(r.slots || []).join(", ")}</td>
-                        <td style={S.td}>LKR {(r.total || 0).toLocaleString()}</td>
+                        <td style={S.td}>LKR {Number(r.total || 0).toLocaleString("en-US")}</td>
                       </tr>
                     ))}
                     <tr style={{ borderTop:"2px solid #16a34a" }}>
                       <td style={{ ...S.td, fontWeight:700 }} colSpan={5}>
                         Total ({revenueModal.records.length} record{revenueModal.records.length !== 1 ? "s" : ""})
                       </td>
-                      <td style={{ ...S.td, fontWeight:700, color:"#16a34a" }}>LKR {(revenueModal.total || 0).toLocaleString()}</td>
+                      <td style={{ ...S.td, fontWeight:700, color:"#16a34a" }}>LKR {Number(revenueModal.total || 0).toLocaleString("en-US")}</td>
                     </tr>
                   </tbody>
                 </table>
