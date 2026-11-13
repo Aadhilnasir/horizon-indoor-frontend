@@ -733,6 +733,7 @@ export default function Booking() {
         : (isNight ? facilities[selectedFacility]?.night_rate : facilities[selectedFacility]?.day_rate) || 0)
     : 0;
   const total      = rate * selectedSlots.size;
+  const paidNum    = parseInt(paidAmount) || 0; // typed text → number (empty = 0)
   const canConfirm = selectedFacility !== null && selectedSlots.size > 0;
   const accentColor = isNight ? "#3b82f6" : "#16a34a";
   const isCurrentMonthAndYear = calYear === today.getFullYear() && calMonth === today.getMonth();
@@ -1167,23 +1168,25 @@ export default function Booking() {
               <label style={S.payInputLabel}>Pay Now (LKR)</label>
               <input
                 style={S.payInput}
-                type="number"
-                min={500}
-                max={total}
+                type="text"
+                inputMode="numeric"
                 value={paidAmount}
-                onChange={e => setPaidAmount(Math.min(total, Math.max(0, parseInt(e.target.value) || 0)))}
+                onChange={e => {
+                  const digits = e.target.value.replace(/\D/g, "").replace(/^0+/, "");
+                  setPaidAmount(digits === "" ? "" : String(Math.min(total, parseInt(digits))));
+                }}
               />
-              {paidAmount < 500 && <div style={S.payError}>⚠️ Minimum deposit is LKR 500</div>}
-              {paidAmount > total && <div style={S.payError}>⚠️ Cannot exceed total amount</div>}
+              {paidNum < 500 && <div style={S.payError}>⚠️ Minimum deposit is LKR 500</div>}
+              {paidNum > total && <div style={S.payError}>⚠️ Cannot exceed total amount</div>}
             </div>
 
             {/* Balance info */}
             <div style={S.payMsg}>
-              💰 Paying now: <strong>LKR {paidAmount.toLocaleString()}</strong>
-              {paidAmount < total && (
-                <> · Balance at venue: <strong>LKR {(total - paidAmount).toLocaleString()}</strong></>
+              💰 Paying now: <strong>LKR {paidNum.toLocaleString()}</strong>
+              {paidNum < total && (
+                <> · Balance at venue: <strong>LKR {(total - paidNum).toLocaleString()}</strong></>
               )}
-              {paidAmount === total && <> · <strong>Full amount paid ✅</strong></>}
+              {paidNum === total && <> · <strong>Full amount paid ✅</strong></>}
             </div>
 
             <div style={S.payBtnRow}>
@@ -1195,9 +1198,9 @@ export default function Booking() {
                 Cancel
               </button>
               <button
-                style={{ ...S.payBtn, opacity: (paidAmount < 500 || paidAmount > total || confirming) ? 0.6 : 1, cursor: (paidAmount < 500 || paidAmount > total || confirming) ? "not-allowed" : "pointer" }}
+                style={{ ...S.payBtn, opacity: (paidNum < 500 || paidNum > total || confirming) ? 0.6 : 1, cursor: (paidNum < 500 || paidNum > total || confirming) ? "not-allowed" : "pointer" }}
                 onClick={handlePayAndBook}
-                disabled={paidAmount < 500 || paidAmount > total || confirming}
+                disabled={paidNum < 500 || paidNum > total || confirming}
               >
                 {confirming ? "CONFIRMING..." : "CONFIRM & BOOK"}
               </button>
