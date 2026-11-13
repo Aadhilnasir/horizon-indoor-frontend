@@ -418,7 +418,7 @@ export default function Home() {
             </div>
             <div style={S.footerCredit}>
               Designed & Developed by{" "}
-              <span style={S.footerCreditName}>Aadhil Nazir</span>
+              <span style={S.footerCreditName}>Peaky Blinders, 49th FoS UoJ</span>
             </div>
           </div>
         </div>
