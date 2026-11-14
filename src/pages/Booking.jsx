@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getFacilities, getBookedSlots, createBooking, isLoggedIn, getRole, adminGetSlotInfo, getHolidays, lockSlots, unlockSlots } from "../api";
+import { isValidPhone, sanitizePhoneInput, PHONE_ERROR } from "../utils/phone";
 
 const DAY_SLOTS = [
   "06:00 – 07:00","07:00 – 08:00","08:00 – 09:00","09:00 – 10:00",
@@ -189,7 +190,7 @@ const S = {
   loginBanner: { background:"#dcfce7", border:"1px solid #16a34a", borderRadius:12, padding:"14px 18px", fontSize:13, color:"#16a34a", marginBottom:16, textAlign:"center", lineHeight:1.6 },
   btnConfirm: (d,n) => ({ width:"100%", padding:18, background: d?"#f0f7f0":(n?"linear-gradient(135deg,#2563eb,#3b82f6)":"#16a34a"), border:`1px solid ${d?"#d1e7d1":"transparent"}`, borderRadius:14, fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3, color: d?"#9ca3af":(n?"#ffffff":"#ffffff"), cursor: d?"not-allowed":"pointer", marginBottom:12, transition:"all .25s" }),
   btnClear: { width:"100%", padding:12, background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:500, color:"#6b7280", cursor:"pointer" },
-  toast: v => ({ position:"fixed", bottom:32, left:"50%", transform: v?"translateX(-50%) translateY(0)":"translateX(-50%) translateY(20px)", background:"#16a34a", color:"#f0f7f0", fontWeight:700, fontSize:14, padding:"14px 28px", borderRadius:20, opacity: v?1:0, transition:"all .4s cubic-bezier(0.34,1.56,0.64,1)", zIndex:999, whiteSpace:"normal", maxWidth:"90vw", textAlign:"center", pointerEvents:"none" }),
+  toast: v => ({ position:"fixed", bottom:32, left:"50%", transform: v?"translateX(-50%) translateY(0)":"translateX(-50%) translateY(20px)", background:"#16a34a", color:"#f0f7f0", fontWeight:700, fontSize:14, padding:"14px 28px", borderRadius:20, opacity: v?1:0, transition:"all .4s cubic-bezier(0.34,1.56,0.64,1)", zIndex:2000, whiteSpace:"normal", maxWidth:"90vw", textAlign:"center", pointerEvents:"none" }),
 
   // ── PAYMENT MODAL ─────────────────────────────────────────────────────────
   payOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" },
@@ -275,6 +276,7 @@ export default function Booking() {
   const [adminAction,      setAdminAction]      = useState("self"); // 'self' | 'guest' | 'hold'
   const [guestName,        setGuestName]        = useState("");
   const [guestPhone,       setGuestPhone]       = useState("");
+  const [guestError,       setGuestError]       = useState("");
   const [adminHeldSlots,   setAdminHeldSlots]   = useState({}); // {slotStr: expiryISO}
   const [holdTimers,       setHoldTimers]       = useState({}); // {slotStr: secondsLeft}
 
@@ -486,9 +488,10 @@ export default function Booking() {
   // Confirm guest booking — books all selected slots for a walk-in customer
   const handleGuestBook = async () => {
     if (!guestName.trim() || !guestPhone.trim()) {
-      showToast("Please enter customer name and phone");
+      setGuestError("Please enter customer name and phone");
       return;
     }
+    if (!isValidPhone(guestPhone)) { setGuestError(PHONE_ERROR); return; }
     const f        = facilities[selectedFacility];
     const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
     setConfirming(true);
@@ -506,6 +509,7 @@ export default function Booking() {
       setSelectedSlots(new Set());
       setGuestName("");
       setGuestPhone("");
+      setGuestError("");
       setAdminAction("self");
       loadBookedSlots();
     } catch (e) {
@@ -1008,7 +1012,7 @@ export default function Booking() {
 
       {/* ── ADMIN ACTION MODAL — triggered from CONFIRM BOOKING button ── */}
       {adminActionModal && (
-        <div style={S.adminActionOverlay} onClick={() => setAdminActionModal(false)}>
+        <div style={S.adminActionOverlay} onClick={() => { setAdminActionModal(false); setGuestError(""); }}>
           <div style={S.adminActionBox} onClick={e => e.stopPropagation()}>
             <div style={S.adminActionTitle}>Confirm Booking</div>
             {/* Summary of selected slots */}
@@ -1050,15 +1054,19 @@ export default function Booking() {
                   style={S.adminInput}
                   placeholder="Enter customer name"
                   value={guestName}
-                  onChange={e => setGuestName(e.target.value)}
+                  onChange={e => { setGuestName(e.target.value); setGuestError(""); }}
                 />
                 <label style={S.adminInputLabel}>Customer Phone</label>
                 <input
                   style={S.adminInput}
+                  type="tel"
+                  inputMode="tel"
+                  maxLength={20}
                   placeholder="0771234567"
                   value={guestPhone}
-                  onChange={e => setGuestPhone(e.target.value)}
+                  onChange={e => { setGuestPhone(sanitizePhoneInput(e.target.value)); setGuestError(""); }}
                 />
+                {guestError && <div style={{ ...S.payError, marginBottom:8 }}>⚠️ {guestError}</div>}
                 <button
                   style={{ width:"100%", padding:"10px", background:"#2563eb", border:"none", borderRadius:8, color:"#ffffff", fontWeight:700, fontSize:13, cursor: confirming ? "not-allowed" : "pointer", marginTop:4, opacity: confirming ? 0.6 : 1 }}
                   onClick={handleGuestBook}
@@ -1083,7 +1091,7 @@ export default function Booking() {
               </div>
             </div>
 
-            <button style={S.adminActionCancelBtn} onClick={() => setAdminActionModal(false)}>Cancel</button>
+            <button style={S.adminActionCancelBtn} onClick={() => { setAdminActionModal(false); setGuestError(""); }}>Cancel</button>
           </div>
         </div>
       )}
