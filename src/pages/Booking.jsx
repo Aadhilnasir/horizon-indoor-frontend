@@ -193,8 +193,8 @@ const S = {
   toast: v => ({ position:"fixed", bottom:32, left:"50%", transform: v?"translateX(-50%) translateY(0)":"translateX(-50%) translateY(20px)", background:"#16a34a", color:"#f0f7f0", fontWeight:700, fontSize:14, padding:"14px 28px", borderRadius:20, opacity: v?1:0, transition:"all .4s cubic-bezier(0.34,1.56,0.64,1)", zIndex:2000, whiteSpace:"normal", maxWidth:"90vw", textAlign:"center", pointerEvents:"none" }),
 
   // ── PAYMENT MODAL ─────────────────────────────────────────────────────────
-  payOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" },
-  payBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"32px", minWidth:340, maxWidth:420, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.15)" },
+  payOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16, overflowY:"auto" },
+  payBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"32px", maxWidth:420, width:"100%", maxHeight:"calc(100vh - 32px)", overflowY:"auto", boxSizing:"border-box", boxShadow:"0 24px 64px rgba(0,0,0,0.15)" },
   payTitle: { fontFamily:"'Bebas Neue',sans-serif", fontSize:28, letterSpacing:2, color:"#14532d", marginBottom:4 },
   paySub: { fontSize:13, color:"#6b7280", marginBottom:24, lineHeight:1.6 },
   payRow: { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:"1px solid #f0f7f0" },
@@ -211,20 +211,20 @@ const S = {
   payError: { fontSize:12, color:"#dc2626", marginTop:4 },
 
   // ── ADMIN SLOT INFO MODAL ─────────────────────────────────────────────────
-  modalOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" },
-  modalBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"32px", minWidth:320, maxWidth:400, position:"relative" },
+  modalOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 },
+  modalBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"32px", minWidth:320, maxWidth:400, boxSizing:"border-box", position:"relative" },
   modalTitle: { fontFamily:"'Bebas Neue',sans-serif", fontSize:24, letterSpacing:2, color:"#14532d", marginBottom:4 },
   modalSlot: { fontSize:12, color:"#6b7280", marginBottom:24 },
   modalRow: { display:"flex", alignItems:"center", gap:12, marginBottom:16, padding:"12px 16px", background:"#f0f7f0", borderRadius:10, border:"1px solid #d1e7d1" },
   modalIcon: { fontSize:20, flexShrink:0 },
   modalLabel: { fontSize:10, fontWeight:600, letterSpacing:2, textTransform:"uppercase", color:"#6b7280", marginBottom:2 },
-  modalVal: { fontSize:14, fontWeight:600, color:"#14532d" },
+  modalVal: { fontSize:14, fontWeight:600, color:"#14532d", overflowWrap:"anywhere" },
   modalVia: { fontSize:11, color:"#b45309", marginTop:8, padding:"6px 12px", background:"#fefce8", border:"1px solid #fde68a", borderRadius:6 },
   modalClose: { width:"100%", padding:"12px", marginTop:8, background:"#d1e7d1", border:"none", borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:600, color:"#14532d", cursor:"pointer" },
 
   // ── ADMIN ACTION MODAL ────────────────────────────────────────────────────
-  adminActionOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 },
-  adminActionBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"28px", minWidth:320, maxWidth:400, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.2)" },
+  adminActionOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:16, overflowY:"auto" },
+  adminActionBox: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:20, padding:"28px", maxWidth:400, width:"100%", maxHeight:"calc(100vh - 32px)", overflowY:"auto", boxSizing:"border-box", boxShadow:"0 24px 64px rgba(0,0,0,0.2)" },
   adminActionTitle: { fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2, color:"#14532d", marginBottom:4 },
   adminActionSlot: { fontSize:12, color:"#6b7280", marginBottom:20 },
   adminActionBtn: (color, bg) => ({ width:"100%", padding:"14px 18px", marginBottom:10, background:bg, border:`1px solid ${color}`, borderRadius:12, display:"flex", alignItems:"center", gap:12, cursor:"pointer", textAlign:"left", transition:"all .18s" }),
@@ -1099,7 +1099,8 @@ export default function Booking() {
       {/* ── ADMIN SLOT INFO MODAL — click a booked slot to see who booked it ── */}
       {slotModal && (
         <div style={S.modalOverlay} onClick={() => setSlotModal(null)}>
-          <div style={S.modalBox} onClick={e => e.stopPropagation()}>
+          <style>{`@media (max-width: 768px) { .slot-info-box { width: 100% !important; min-width: 0 !important; } }`}</style>
+          <div style={S.modalBox} className="slot-info-box" onClick={e => e.stopPropagation()}>
             <div style={S.modalTitle}>Slot Info</div>
             <div style={S.modalSlot}>🕐 {slotModal.slot} · {session === "night" ? "Night 🌙" : "Day ☀️"}</div>
 

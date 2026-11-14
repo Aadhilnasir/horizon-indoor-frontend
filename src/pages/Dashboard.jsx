@@ -85,6 +85,14 @@ export default function Dashboard() {
           Welcome, <span style={{ color:"#16a34a" }}>{username}</span>
         </div>
 
+        <style>{`
+          @media (max-width: 768px) {
+            .dashboard-stat-num {
+              font-size: clamp(20px, 6vw, 36px) !important;
+              overflow-wrap: anywhere !important;
+            }
+          }
+        `}</style>
         <div style={S.statsRow} className="dashboard-stats">
           {[
             { num: bookings.length,                    label:"Total Bookings" },
@@ -94,7 +102,7 @@ export default function Dashboard() {
           ].map(({ num, label }) => (
             <div key={label} style={S.statCard}>
               <div style={S.statAccent} />
-              <div style={S.statNum}>{num}</div>
+              <div style={S.statNum} className="dashboard-stat-num">{num}</div>
               <div style={S.statLabel}>{label}</div>
             </div>
           ))}
