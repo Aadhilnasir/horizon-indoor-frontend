@@ -47,7 +47,7 @@ const S = {
   btnNeutral: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:6, padding:"6px 12px", fontSize:11, color:"#6b7280", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", transition:"all .18s" },
   loading: { textAlign:"center", color:"#6b7280", padding:"40px 0", fontSize:13 },
   empty: { textAlign:"center", color:"#d1e7d1", padding:"40px 0", fontSize:13 },
-  toast: v => ({ position:"fixed", bottom:32, left:"50%", transform: v?"translateX(-50%) translateY(0)":"translateX(-50%) translateY(20px)", background:"#16a34a", color:"#f0f7f0", fontWeight:700, fontSize:14, padding:"14px 28px", borderRadius:100, opacity: v?1:0, transition:"all .4s cubic-bezier(0.34,1.56,0.64,1)", zIndex:9999, whiteSpace:"nowrap", pointerEvents:"none" }),
+  toast: v => ({ position:"fixed", bottom:32, left:"50%", transform: v?"translateX(-50%) translateY(0)":"translateX(-50%) translateY(20px)", background:"#16a34a", color:"#f0f7f0", fontWeight:700, fontSize:14, padding:"14px 28px", borderRadius:100, opacity: v?1:0, transition:"all .4s cubic-bezier(0.34,1.56,0.64,1)", zIndex:9999, width:"max-content", maxWidth:"calc(100vw - 32px)", whiteSpace:"normal", textAlign:"center", boxSizing:"border-box", pointerEvents:"none" }),
 };
 
 const reasonBadge = { fontSize:11, fontWeight:600, padding:"2px 10px", borderRadius:20, background:"#fef2f2", border:"1px solid #fecaca", color:"#dc2626" };
@@ -157,11 +157,22 @@ export default function AdminDashboard() {
           border: 1px solid #d1e7d1 !important;
         }
         .admin-table {
-          min-width: 700px !important;
+          min-width: 640px !important;
           font-size: 11px !important;
         }
-        .admin-table th { padding: 8px 10px !important; font-size: 9px !important; }
+        .admin-table.admin-table-bookings   { min-width: 900px !important; }
+        .admin-table.admin-table-facilities { min-width: 720px !important; }
+        .admin-table th { padding: 8px 10px !important; font-size: 9px !important; white-space: nowrap !important; }
         .admin-table td { padding: 10px 10px !important; font-size: 11px !important; }
+        /* Keep dates, badges, LKR amounts, slot pills and buttons on one line */
+        .admin-table .admin-nw,
+        .admin-table button { white-space: nowrap !important; }
+
+        /* Stat numbers: smaller, and long values wrap instead of being cut off */
+        .admin-stat-num {
+          font-size: clamp(20px, 6vw, 36px) !important;
+          overflow-wrap: anywhere !important;
+        }
 
         /* Block dates form: stack vertically */
         .admin-block-form {
@@ -198,7 +209,6 @@ export default function AdminDashboard() {
 
       @media (max-width: 480px) {
         .admin-stats { gap: 8px !important; }
-        .admin-table { min-width: 600px !important; }
         .admin-tabs button { padding: 7px 11px !important; font-size: 10px !important; }
       }
     `;
@@ -449,7 +459,7 @@ export default function AdminDashboard() {
                 title={label === "Total Revenue" ? "View revenue records" : undefined}
               >
                 <div style={S.statAccent(color)} />
-                <div style={{ ...S.statNum, color }}>{num}</div>
+                <div style={{ ...S.statNum, color }} className="admin-stat-num">{num}</div>
                 <div style={S.statLabel}>{label}</div>
               </div>
             ))}
@@ -497,7 +507,7 @@ export default function AdminDashboard() {
                   <div style={S.empty}>No bookings found.</div>
                 ) : (
                   <div className="admin-table-wrap">
-                    <table style={S.table} className="admin-table">
+                    <table style={S.table} className="admin-table admin-table-bookings">
                       <thead>
                         <tr>
                           {["User","Facility","Date","Session","Slots","Booked For","Total","Paid","Balance","Action"].map(h => (
@@ -526,8 +536,8 @@ export default function AdminDashboard() {
                               <td style={S.td}>
                                 <div style={{ fontWeight:600, display:"flex", alignItems:"center", gap:6 }}>
                                   {b.user}
-                                  {isFinished && <span style={{ fontSize:10, background:"#d1e7d1", color:"#6b7280", borderRadius:4, padding:"1px 6px" }}>Done</span>}
-                                  {b.is_today && !isFinished && <span style={{ fontSize:10, background:"#dcfce7", color:"#16a34a", borderRadius:4, padding:"1px 6px", border:"1px solid #16a34a" }}>Today</span>}
+                                  {isFinished && <span className="admin-nw" style={{ fontSize:10, background:"#d1e7d1", color:"#6b7280", borderRadius:4, padding:"1px 6px" }}>Done</span>}
+                                  {b.is_today && !isFinished && <span className="admin-nw" style={{ fontSize:10, background:"#dcfce7", color:"#16a34a", borderRadius:4, padding:"1px 6px", border:"1px solid #16a34a" }}>Today</span>}
                                 </div>
                                 <div style={{ fontSize:11, color:"#6b7280" }}>{b.user_email}</div>
                               </td>
@@ -542,12 +552,12 @@ export default function AdminDashboard() {
                                   );
                                 })()}
                               </td>
-                              <td style={S.tdMuted}>{b.date}</td>
+                              <td style={S.tdMuted} className="admin-nw">{b.date}</td>
                               <td style={S.td}>
-                                <span style={S.slotPill(isNight)}>{isNight?"🌙 Night":"☀️ Day"}</span>
+                                <span style={S.slotPill(isNight)} className="admin-nw">{isNight?"🌙 Night":"☀️ Day"}</span>
                               </td>
                               <td style={S.td}>
-                                {(b.slots||[]).map(s => <span key={s} style={S.slotPill(isNight)}>{s}</span>)}
+                                {(b.slots||[]).map(s => <span key={s} style={S.slotPill(isNight)} className="admin-nw">{s}</span>)}
                               </td>
                               <td style={S.td}>
                                 {b.guest_name ? (
@@ -556,18 +566,18 @@ export default function AdminDashboard() {
                                     <div style={{ fontSize:11, color:"#6b7280" }}>📞 {b.guest_phone}</div>
                                   </div>
                                 ) : b.is_hold ? (
-                                  <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:20, background:"#fffbeb", border:"1px solid #f59e0b", color:"#b45309" }}>⏳ Hold</span>
+                                  <span className="admin-nw" style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:20, background:"#fffbeb", border:"1px solid #f59e0b", color:"#b45309" }}>⏳ Hold</span>
                                 ) : (
                                   <span style={{ color:"#d1e7d1", fontSize:11 }}>—</span>
                                 )}
                               </td>
-                              <td style={{ ...S.td, fontFamily:"'Bebas Neue',sans-serif", color:"#16a34a", fontSize:16 }}>
+                              <td style={{ ...S.td, fontFamily:"'Bebas Neue',sans-serif", color:"#16a34a", fontSize:16 }} className="admin-nw">
                                 LKR {(b.total||0).toLocaleString()}
                               </td>
-                              <td style={{ ...S.td, color:"#15803d", fontWeight:600, fontSize:13 }}>
+                              <td style={{ ...S.td, color:"#15803d", fontWeight:600, fontSize:13 }} className="admin-nw">
                                 {b.paid_amount > 0 ? `LKR ${b.paid_amount.toLocaleString()}` : '—'}
                               </td>
-                              <td style={{ ...S.td, fontSize:13 }}>
+                              <td style={{ ...S.td, fontSize:13 }} className="admin-nw">
                                 {b.payment_status === 'paid' ? (
                                   <span style={{ color:"#16a34a", fontWeight:600 }}>Paid ✅</span>
                                 ) : b.payment_status === 'partial' ? (
@@ -637,12 +647,12 @@ export default function AdminDashboard() {
                             <td style={S.tdMuted}>{u.email}</td>
                             <td style={S.tdMuted}>{u.phone}</td>
                             <td style={S.td}>
-                              <span style={u.role==="admin" ? S.adminBadge : S.userBadge}>
+                              <span style={u.role==="admin" ? S.adminBadge : S.userBadge} className="admin-nw">
                                 {u.role==="admin" ? "⚡ Admin" : "User"}
                               </span>
                             </td>
                             <td style={S.tdMuted}>{u.bookings_count}</td>
-                            <td style={S.tdMuted}>{u.joined}</td>
+                            <td style={S.tdMuted} className="admin-nw">{u.joined}</td>
                             <td style={{ ...S.td, display:"flex", gap:6, flexWrap:"wrap" }}>
                               <button style={S.btnWarning} onClick={() => handleChangeRole(u.id, u.role)}>
                                 {u.role==="admin" ? "Make User" : "Make Admin"}
@@ -725,11 +735,11 @@ export default function AdminDashboard() {
                       <tbody>
                         {holidays.map((h, i) => (
                           <tr key={h.id} style={S.tr(i%2===0)}>
-                            <td style={{...S.td, fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:"#ff8080"}}>{h.date}</td>
+                            <td style={{...S.td, fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:"#ff8080"}} className="admin-nw">{h.date}</td>
                             <td style={S.td}>{h.name}</td>
                             <td style={S.tdMuted}>{h.year}</td>
                             <td style={S.td}>
-                              <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:20,
+                              <span className="admin-nw" style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:20,
                                 background: h.type==="auto" ? "rgba(160,196,255,0.1)" : "rgba(200,245,58,0.1)",
                                 border: `1px solid ${h.type==="auto" ? "rgba(160,196,255,0.3)" : "rgba(200,245,58,0.3)"}`,
                                 color: h.type==="auto" ? "#3b82f6" : "#16a34a" }}>
@@ -819,8 +829,8 @@ export default function AdminDashboard() {
                                 </div>
                               )}
                             </td>
-                            <td style={S.td}>{b.start_date}</td>
-                            <td style={S.td}>{b.end_date}</td>
+                            <td style={S.td} className="admin-nw">{b.start_date}</td>
+                            <td style={S.td} className="admin-nw">{b.end_date}</td>
                             <td style={S.td}>
                               {b.reason === "Tournament" ? (
                                 <button type="button" className="admin-reason-link" title="View tournament details"
@@ -830,7 +840,7 @@ export default function AdminDashboard() {
                                   {b.reason}
                                 </button>
                               ) : (
-                                <span style={reasonBadge}>{b.reason}</span>
+                                <span style={reasonBadge} className="admin-nw">{b.reason}</span>
                               )}
                             </td>
                             <td style={S.td}>
@@ -855,7 +865,7 @@ export default function AdminDashboard() {
               <>
                 <div style={S.sectionTitle}>All Facilities ({facilities.length})</div>
                 <div className="admin-table-wrap">
-                  <table style={S.table} className="admin-table">
+                  <table style={S.table} className="admin-table admin-table-facilities">
                     <thead>
                       <tr>
                         {["Icon","Name","Tag","Day Rate","Night Rate","Linked Courts","Status","Action"].map(h => (
@@ -869,8 +879,8 @@ export default function AdminDashboard() {
                           <td style={S.td}><span style={{ fontSize:24 }}>{f.icon}</span></td>
                           <td style={S.td}><div style={{ fontWeight:600 }}>{f.name}</div></td>
                           <td style={S.tdMuted}>{f.tag}</td>
-                          <td style={{ ...S.td, color:"#16a34a", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.day_rate}</td>
-                          <td style={{ ...S.td, color:"#3b82f6", fontFamily:"'Bebas Neue',sans-serif" }}>LKR {f.night_rate}</td>
+                          <td style={{ ...S.td, color:"#16a34a", fontFamily:"'Bebas Neue',sans-serif" }} className="admin-nw">LKR {f.day_rate}</td>
+                          <td style={{ ...S.td, color:"#3b82f6", fontFamily:"'Bebas Neue',sans-serif" }} className="admin-nw">LKR {f.night_rate}</td>
                           <td style={S.td}>
                             {f.linked_facility_ids?.length > 0
                               ? <span style={{ fontSize:11, color:"#b45309" }}>
@@ -880,7 +890,7 @@ export default function AdminDashboard() {
                             }
                           </td>
                           <td style={S.td}>
-                            <span style={f.is_active ? S.activeBadge : S.inactiveBadge}>
+                            <span style={f.is_active ? S.activeBadge : S.inactiveBadge} className="admin-nw">
                               {f.is_active ? "Active" : "Inactive"}
                             </span>
                           </td>
@@ -957,19 +967,19 @@ export default function AdminDashboard() {
                   <tbody>
                     {revenueModal.records.map((r, idx) => (
                       <tr key={r.id ?? idx} style={{ ...S.tr(idx % 2 === 0), borderBottom:"1px solid #f0f7f0" }}>
-                        <td style={S.tdMuted}>{r.date}</td>
+                        <td style={S.tdMuted} className="admin-nw">{r.date}</td>
                         <td style={S.td}>{r.customer || r.guest_name || r.user || "-"}</td>
                         <td style={S.td}>{r.facility}</td>
                         <td style={S.td}>{r.session === "night" ? "Night" : r.session === "day" ? "Day" : r.session}</td>
                         <td style={S.td}>{(r.slots || []).join(", ")}</td>
-                        <td style={S.td}>LKR {Number(r.total || 0).toLocaleString("en-US")}</td>
+                        <td style={S.td} className="admin-nw">LKR {Number(r.total || 0).toLocaleString("en-US")}</td>
                       </tr>
                     ))}
                     <tr style={{ borderTop:"2px solid #16a34a" }}>
                       <td style={{ ...S.td, fontWeight:700 }} colSpan={5}>
                         Total ({revenueModal.records.length} record{revenueModal.records.length !== 1 ? "s" : ""})
                       </td>
-                      <td style={{ ...S.td, fontWeight:700, color:"#16a34a" }}>LKR {Number(revenueModal.total || 0).toLocaleString("en-US")}</td>
+                      <td style={{ ...S.td, fontWeight:700, color:"#16a34a" }} className="admin-nw">LKR {Number(revenueModal.total || 0).toLocaleString("en-US")}</td>
                     </tr>
                   </tbody>
                 </table>
