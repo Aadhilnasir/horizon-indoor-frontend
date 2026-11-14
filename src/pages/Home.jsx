@@ -34,17 +34,17 @@ const S = {
   sectionTitle: { fontFamily:"'Bebas Neue',sans-serif", fontSize:42, letterSpacing:2, color:"#14532d", marginBottom:8 },
   sectionSub: { fontSize:14, color:"#6b7280", marginBottom:40 },
   facilityGrid: { display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16 },
-  facilityCard: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:16, overflow:"hidden", transition:"all .25s", boxShadow:"0 4px 16px rgba(22,163,74,0.08)", cursor:"pointer", display:"flex", flexDirection:"column" },
+  facilityCard: { background:"#ffffff", border:"1px solid #d1e7d1", borderRadius:16, overflow:"hidden", transition:"all .25s", boxShadow:"0 4px 16px rgba(22,163,74,0.08)", cursor:"pointer", display:"grid", gridTemplateRows:"subgrid", gridRow:"span 4", rowGap:0 },
   facilityPhoto: { width:"100%", height:160, objectFit:"cover", display:"block" },
   lightboxOverlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" },
   lightboxImg: { maxWidth:"90vw", maxHeight:"85vh", objectFit:"contain", borderRadius:12, boxShadow:"0 24px 64px rgba(0,0,0,0.5)" },
   lightboxClose: { position:"absolute", top:20, right:24, background:"rgba(255,255,255,0.15)", border:"none", color:"#ffffff", fontSize:28, width:44, height:44, borderRadius:"50%", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(4px)" },
   lightboxName: { position:"absolute", bottom:24, left:"50%", transform:"translateX(-50%)", background:"rgba(0,0,0,0.6)", color:"#ffffff", fontSize:14, fontWeight:600, padding:"8px 20px", borderRadius:20, whiteSpace:"nowrap", backdropFilter:"blur(4px)" },
-  facilityCardBody: { padding:"16px 20px 20px", display:"flex", flexDirection:"column", flex:1 },
+  facilityCardBody: { padding:"16px 20px 20px", display:"grid", gridTemplateRows:"subgrid", gridRow:"span 3", rowGap:0 },
   facilityAccent: { position:"absolute", top:0, left:0, right:0, height:2, background:"#16a34a" },
   facilityIcon: { fontSize:36, marginBottom:14, display:"block" },
-  facilityName: { fontSize:15, fontWeight:600, color:"#14532d", marginBottom:4 },
-  facilityTag:  { fontSize:12, color:"#6b7280", marginBottom:12 },
+  facilityName: { fontSize:15, fontWeight:600, color:"#14532d", marginBottom:4, lineHeight:1.3, minWidth:0, overflowWrap:"anywhere" },
+  facilityTag:  { fontSize:12, color:"#6b7280", marginBottom:12, lineHeight:1.5, textAlign:"left" },
   facilityRate: { fontSize:13, fontWeight:700, color:"#16a34a" },
   facilityBtn: { display:"inline-block", marginTop:16, textDecoration:"none", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, padding:"8px 20px", borderRadius:8, background:"transparent", color:"#16a34a", border:"1px solid rgba(200,245,58,0.3)", transition:"all .18s" },
 
@@ -315,12 +315,12 @@ export default function Home() {
                   onClick={() => setLightbox({ src: facilityPhotos[f.name] || "/facilities/cricket1.jpeg", name: f.name })}
                 />
                 <div style={S.facilityCardBody}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                    <span style={{ fontSize:18 }}>{f.icon}</span>
+                  <div style={{ display:"flex", alignItems:"flex-start", gap:8, marginBottom:4 }}>
+                    <span style={{ fontSize:18, lineHeight:1.1, flexShrink:0 }}>{f.icon}</span>
                     <div style={S.facilityName}>{f.name}</div>
                   </div>
                   <div style={S.facilityTag}>{f.tag}</div>
-                  <Link to="/booking" style={{ display:"inline-block", marginTop:"auto", paddingTop:12, textDecoration:"none", background:"linear-gradient(135deg, #16a34a 0%, #15803d 100%)", color:"#ffffff", fontSize:12, fontWeight:700, padding:"10px 20px", borderRadius:8, boxShadow:"0 4px 14px rgba(22,163,74,0.4), 0 0 0 1px rgba(22,163,74,0.2)", letterSpacing:"0.5px" }}>
+                  <Link to="/booking" style={{ display:"inline-block", alignSelf:"end", textAlign:"center", paddingTop:12, textDecoration:"none", background:"linear-gradient(135deg, #16a34a 0%, #15803d 100%)", color:"#ffffff", fontSize:12, fontWeight:700, padding:"10px 20px", borderRadius:8, boxShadow:"0 4px 14px rgba(22,163,74,0.4), 0 0 0 1px rgba(22,163,74,0.2)", letterSpacing:"0.5px" }}>
                     Book Now →
                   </Link>
                 </div>
