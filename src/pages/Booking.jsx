@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getFacilities, getBookedSlots, createBooking, isLoggedIn, getRole, adminGetSlotInfo, getHolidays, lockSlots, unlockSlots } from "../api";
+import { isValidPhone, sanitizePhoneInput, PHONE_ERROR } from "../utils/phone";
 
 const DAY_SLOTS = [
   "06:00 – 07:00","07:00 – 08:00","08:00 – 09:00","09:00 – 10:00",
@@ -489,6 +490,7 @@ export default function Booking() {
       showToast("Please enter customer name and phone");
       return;
     }
+    if (!isValidPhone(guestPhone)) { showToast(PHONE_ERROR); return; }
     const f        = facilities[selectedFacility];
     const newSlots = [...selectedSlots].sort((a,b)=>a-b).map(i => TIME_SLOTS[i]);
     setConfirming(true);
@@ -1055,9 +1057,12 @@ export default function Booking() {
                 <label style={S.adminInputLabel}>Customer Phone</label>
                 <input
                   style={S.adminInput}
+                  type="tel"
+                  inputMode="tel"
+                  maxLength={20}
                   placeholder="0771234567"
                   value={guestPhone}
-                  onChange={e => setGuestPhone(e.target.value)}
+                  onChange={e => setGuestPhone(sanitizePhoneInput(e.target.value))}
                 />
                 <button
                   style={{ width:"100%", padding:"10px", background:"#2563eb", border:"none", borderRadius:8, color:"#ffffff", fontWeight:700, fontSize:13, cursor: confirming ? "not-allowed" : "pointer", marginTop:4, opacity: confirming ? 0.6 : 1 }}
