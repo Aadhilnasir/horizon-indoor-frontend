@@ -320,7 +320,7 @@ export default function Home() {
                     <div style={S.facilityName}>{f.name}</div>
                   </div>
                   <div style={S.facilityTag}>{f.tag}</div>
-                  <Link to="/booking" style={{ display:"inline-block", alignSelf:"end", textAlign:"center", paddingTop:12, textDecoration:"none", background:"linear-gradient(135deg, #16a34a 0%, #15803d 100%)", color:"#ffffff", fontSize:12, fontWeight:700, padding:"10px 20px", borderRadius:8, boxShadow:"0 4px 14px rgba(22,163,74,0.4), 0 0 0 1px rgba(22,163,74,0.2)", letterSpacing:"0.5px" }}>
+                  <Link to={`/booking?facility=${f.id}`} style={{ display:"inline-block", alignSelf:"end", textAlign:"center", paddingTop:12, textDecoration:"none", background:"linear-gradient(135deg, #16a34a 0%, #15803d 100%)", color:"#ffffff", fontSize:12, fontWeight:700, padding:"10px 20px", borderRadius:8, boxShadow:"0 4px 14px rgba(22,163,74,0.4), 0 0 0 1px rgba(22,163,74,0.2)", letterSpacing:"0.5px" }}>
                     Book Now →
                   </Link>
                 </div>

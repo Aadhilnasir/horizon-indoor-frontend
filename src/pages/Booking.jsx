@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getFacilities, getBookedSlots, createBooking, isLoggedIn, getRole, adminGetSlotInfo, getHolidays, lockSlots, unlockSlots } from "../api";
 import { isValidPhone, sanitizePhoneInput, PHONE_ERROR } from "../utils/phone";
 
@@ -393,6 +393,15 @@ export default function Booking() {
   // ── Slot handlers ─────────────────────────────────────────────────────────
   const handleSessionChange = s => { setSession(s); setSelectedSlots(new Set()); };
   const handleFacilitySelect = idx => { setSelectedFacility(idx); setSelectedSlots(new Set()); };
+
+  // Preselect facility from ?facility=<id> (e.g. Home "Book Now")
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const id = searchParams.get("facility");
+    if (!id || !facilities.length || selectedFacility !== null) return;
+    const idx = facilities.findIndex(f => String(f.id) === id);
+    if (idx !== -1) handleFacilitySelect(idx);
+  }, [facilities]);
 
   // Release admin hold on a specific held slot
   const handleReleaseHold = async (slotStr) => {
