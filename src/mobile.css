@@ -1,5 +1,11 @@
 /* src/mobile.css - Mobile responsive styles for all pages */
 
+/* ── EDGE: hide built-in password reveal / clear buttons (we use our own eye toggle) ── */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 /* ── NAVBAR ─────────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .nb-inner { padding: 0 16px !important; height: 56px !important; }
